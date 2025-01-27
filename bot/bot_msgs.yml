@@ -1,0 +1,188 @@
+start:
+  response_type: text
+  content:
+    Hello! Please tell me about an issue you're facing for which you would like to brainstorm cognitive reappraisals.
+  options: []
+
+
+rate_issue_neg: 
+  response_type: slider
+  content: On a scale of 0-100, how negatively do you feel about this issue?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not negative at all
+      - Slightly negative
+      - Moderately negative
+      - Very negative
+      - Extremely negative
+
+rate_issue_pos:
+  response_type: slider
+  content: On a scale of 0-100, how positively do you feel about this issue?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not positive at all
+      - Slightly positive
+      - Moderately positive
+      - Very positive
+      - Extremely positive
+
+
+rate_reap_1_success:
+  response_type: slider
+  content: On a scale of 0-100, how helpful do you find this reappraisal?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not helpful at all
+      - Slightly helpful
+      - Moderately helpful
+      - Very helpful
+      - Extremely helpful
+
+rate_reap_1_care:
+  response_type: slider
+  content: On a scale of 0-100, how well do you feel this reappraisal addresses what you care about?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not well at all
+      - Slightly well
+      - Moderately well
+      - Very well
+      - Extremely well
+
+rate_reap_1_believe:
+  response_type: slider
+  content: On a scale of 0-100, how much do you feel this reappraisal is an accurate interpretation?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not accurate at all
+      - Slightly accurate
+      - Moderately accurate
+      - Very accurate
+      - Extremely accurate
+
+rate_reap_1_neg: 
+  response_type: slider
+  content: On a scale of 0-100, how negatively do you now feel about this issue?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels: 
+      - Not negative at all
+      - Slightly negative
+      - Moderately negative
+      - Very negative
+      - Extremely negative
+
+
+rate_reap_1_pos:
+  response_type: slider
+  content: On a scale of 0-100, how positively do you now feel about this issue?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels: 
+      - Not positive at all
+      - Slightly positive
+      - Moderately positive
+      - Very positive
+      - Extremely positive
+
+
+rate_reap_2_success:
+  response_type: slider
+  content: On a scale of 0-100, how helpful do you find this reappraisal?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not helpful at all
+      - Slightly helpful
+      - Moderately helpful
+      - Very helpful
+      - Extremely helpful 
+
+
+rate_reap_2_care:
+  response_type: slider
+  content: On a scale of 0-100, how well do you feel this reappraisal addresses what you care about?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not well at all
+      - Slightly well
+      - Moderately well
+      - Very well
+      - Extremely well
+
+
+rate_reap_2_believe:
+  response_type: slider
+  content: On a scale of 0-100, how much do you feel this reappraisal is an accurate interpretation?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not accurate at all
+      - Slightly accurate
+      - Moderately accurate
+      - Very accurate
+      - Extremely accurate
+
+rate_reap_2_neg:
+  response_type: slider
+  content: On a scale of 0-100, how negatively do you now feel about this issue?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not negative at all
+      - Slightly negative
+      - Moderately negative
+      - Very negative
+      - Extremely negative
+
+rate_reap_2_pos:
+  response_type: slider
+  content: On a scale of 0-100, how positively do you now feel about this issue?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not positive at all
+      - Slightly positive
+      - Moderately positive
+      - Very positive
+      - Extremely positive
+
+complete:
+  response_type: noinput
+  content: You have now completed the cognitive reappraisal exercise. Feel free to open a new chat if you'd like to do it again.
+  options: []
+
+
+
+
