@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import generate_csrf
-from db.models import db, User
+from db.models import User
 from db.db_session import get_session
 from db.crud import get_user_by_email, create_user
 from flask_app.blueprints.reddit import reddit_bp

@@ -24,12 +24,12 @@ from sqlalchemy.orm import (
     Session,
 )
 from flask_login import UserMixin
+from sqlalchemy.orm import declarative_base
 
-from flask_app.extensions import db
+# from flask_app.extensions import db
 
 
-class Base(DeclarativeBase):
-    pass
+Base = declarative_base()
 
 
 class RoleEnum(str, Enum):
@@ -65,7 +65,7 @@ class ResponseTypeEnum(str, Enum):
     NOINPUT = "noinput"
         
 
-class User(UserMixin, db.Model):
+class User(UserMixin, Base):
     __tablename__ = 'users'
     
     # Identifiers
@@ -104,7 +104,7 @@ class User(UserMixin, db.Model):
     Index('users_email_index', email)
     
     
-class Conversation(db.Model):
+class Conversation(Base):
     __tablename__ = 'conversations'
     
     # Identifiers
@@ -129,7 +129,7 @@ class Conversation(db.Model):
     Index('conversations_user_id_index', user_id)
 
 
-class Message(db.Model):
+class Message(Base):
     __tablename__ = 'messages'
     
     # Identifiers
@@ -162,7 +162,7 @@ class Message(db.Model):
     Index('messages_user_id_index', user_id)
     Index('messages_conversation_id_index', conversation_id)
 
-class AnalysisData(db.Model):
+class AnalysisData(Base):
     __tablename__ = 'analysis_data'
     
     # Identifiers
@@ -193,7 +193,7 @@ class AnalysisData(db.Model):
     
     
     
-class Donation(db.Model):
+class Donation(Base):
     __tablename__ = 'donations'
     
     # Identifiers
@@ -214,7 +214,7 @@ class Donation(db.Model):
     # Indexes
     Index('donations_user_id_index', user_id)
     
-class Support(db.Model):
+class Support(Base):
     __tablename__ = 'support'
     
     # Identifiers
@@ -241,7 +241,7 @@ class Support(db.Model):
     Index('support_user_id_index', user_id)
 
 
-class LLMQuery(db.Model):
+class LLMQuery(Base):
     __tablename__ = 'llm_queries'
     
     # Identifiers

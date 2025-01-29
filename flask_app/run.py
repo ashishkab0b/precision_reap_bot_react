@@ -1,5 +1,5 @@
-from app import create_app
-from config import CurrentConfig
+from flask_app.app import create_app
+from flask_app.config import CurrentConfig
 
 app = create_app(CurrentConfig)
 
