@@ -10,8 +10,6 @@ services:
       - "8001"
     volumes:
       - ./logs/bot:/app/logs
-    networks:
-      - reapbot_network
     env_file:
       - ./bot/.env
 
@@ -26,8 +24,6 @@ services:
       - ./logs/flask:/app/logs
     env_file:
       - ./flask_app/.env
-    networks:
-      - reapbot_network
     environment:
       - FLASK_ENV=production
 
@@ -54,7 +50,3 @@ services:
       - ./nginx/www:/var/www/certbot
     depends_on:
       - nginx
-  
-  networks:
-    reapbot_network:
-      driver: bridge
