@@ -18,6 +18,7 @@ function Help() {
           Welcome to Reappraise.it: A Free Cognitive Reappraisal AI Helper
         </Typography>
 
+
         <Typography variant="body1" sx={{ mb: 2 }}>
           This is a chatbot that guides you through the process of cognitive reappraisal, a powerful emotion regulation strategy that can help you feel better when you’re feeling down.
         </Typography>
@@ -27,6 +28,8 @@ function Help() {
         <Typography variant="body1" sx={{ mb: 2 }}>
           One particularly adaptive way to change our emotions is called <strong>cognitive reappraisal</strong>. Decades of research have shown that reappraisal—i.e., rethinking a situation to view it from a different, more helpful perspective—can help to transform people's emotional experience and achieve greater well-being. It’s not about ignoring problems or denying reality; it’s about finding new ways to view challenges that reduce distress and help us respond in healthier, more constructive ways.
         </Typography>
+
+
         <Typography variant="h5" gutterBottom sx={{ color: "text.primary" }}>
           Why Reappraise?
         </Typography>
@@ -44,13 +47,13 @@ function Help() {
           </ul>
         </Typography>
         
+
         <Typography variant="h5" gutterBottom sx={{ color: "text.primary" }}>
           Should I ALWAYS reappraise when I feel bad?
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           This is a great question and understanding when someone should or should not use reappraisal is an active area of research with plenty more to learn. We do know that in general, increasing the frequency with which people reappraise tends to do good things for them. However, there are a few things to keep in mind.
           </Typography>
-         
           <ul>
             <li>Negative emotions can be important signals that we need to address a problem in our environment. You do not want your reappraisal to prevent you from taking actions to make things better in your environment.</li>
             <li>Reappraisal can be hard and it can be taxing. (Though, like any skill, it gets easier with practice.) If you are feeling strong and overwhelming negative emotions, you may want to give yourself a bit of time and space before attempting to reappraise. You can think of it like this: reappraisal is an investment of upfront effort for long-term relief—but if you don't have the resources to give that upfront effort, it may be worth waiting until you do.</li>
@@ -60,10 +63,11 @@ function Help() {
               </Box>
             </li>
           </ul>
-
           <Typography variant="body1" sx={{ mb: 2 }}>
           It’s important to use reappraisal in conjunction with other strategies and to be mindful of when it’s appropriate to use it.
         </Typography>
+
+
         <Typography variant="h5" gutterBottom sx={{ color: "text.primary" }}>
           What is this app NOT for?
         </Typography>
@@ -81,19 +85,31 @@ function Help() {
             <li><Typography variant="body1"><Link href="https://befrienders.org">Befrienders Worldwide</Link> - Free, global support network for individuals in crisis</Typography></li>
           </ul>
         </Typography>
+
         <Typography variant="h5" gutterBottom sx={{ color: "text.primary" }}>
           Who made this site and why?
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           I am a PhD student at Stanford studying reappraisal as the topic of my dissertation (<Link href="https://ashish.mehta.fyi/?s=prbr">website</Link>). In my own research, I’ve seen firsthand how powerful reappraisal can be. I’ve conducted many studies where participants were guided to reappraise their challenges. Even though the studies were designed to test particular research questions and not simply to help people feel better, I consistently received overwhelmingly positive feedback. People often shared how profoundly helpful the study was with something they had been really struggling with. The positive feedback from participants in my research projects inspired me to make this process accessible to everyone. 
         </Typography>
+
+        <Typography variant="h5" gutterBottom sx={{ color: "text.primary" }}>
+          How will my data be used?
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          Your data will never be sold. Ever.
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          If you consented for your data to be used in research when making your account, your data may be anonymized and combined with other users to study how we can build better emotional support AI agents. Research findings may be published in academic journals, but your individual conversations will never be shared with anyone outside the research team. If you do not want a particular conversation included in research, you can remove it from your chat history by clicking the trash icon. This ensures it will not be used. Note that this chatbot was designed primarily to help people practice reappraisal—not for a specific research project.
+        </Typography>
+
+
         <Typography variant="h5" gutterBottom sx={{ color: "text.primary" }}>
           How do I get started?
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           Just click this button!
         </Typography>
-        
         <Button 
           variant="contained" 
           color="primary" 
