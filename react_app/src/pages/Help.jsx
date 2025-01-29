@@ -10,10 +10,10 @@ function Help() {
           Welcome to Reappraise.it: A Free Cognitive Reappraisal AI Helper
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Negative emotions can be incredibly useful—they serve as signals, letting us know what’s going wrong or right in our world and highlighting the things we truly care about. They can motivate us to take action, solve problems, and protect what matters most. But sometimes, negative emotions stick around longer than they need to, or they don’t help us take constructive action. In those moments, we have the power to take steps to change how we feel.
+          Negative emotions can be incredibly useful—they serve as signals, letting us know what’s going wrong or right in our world and highlighting the things we truly care about. They can motivate us to take action, solve problems, and protect what matters most. But sometimes, negative emotions stick around longer than they need to or get in the way of our goals. In those moments, we have the power to take steps to change how we feel.
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          One particularly adaptive way to do this is called <strong>cognitive reappraisal</strong>. Decades of research have shown that reappraisal—i.e., rethinking a situation to view it from a different, more helpful perspective—can help to transform people's emotional experience for the better and live life with greater well-being. It’s not about ignoring problems or denying reality; it’s about finding new ways to view challenges that reduce distress and help us respond in healthier, more constructive ways.
+          One particularly adaptive way to change our emotions is called <strong>cognitive reappraisal</strong>. Decades of research have shown that reappraisal—i.e., rethinking a situation to view it from a different, more helpful perspective—can help to transform people's emotional experience for the better and achieve greater well-being. It’s not about ignoring problems or denying reality; it’s about finding new ways to view challenges that reduce distress and help us respond in healthier, more constructive ways.
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           Research has found that people who use reappraisal more often tend to enjoy:
@@ -22,10 +22,11 @@ function Help() {
           <li><Typography variant="body1">Better psychological well-being.</Typography></li>
           <li><Typography variant="body1">Improved physical health.</Typography></li>
           <li><Typography variant="body1">Stronger relationships.</Typography></li>
-          <li><Typography variant="body1">Sharper cognitive functioning.</Typography></li>
+          <li><Typography variant="body1">Better cognitive functioning.</Typography></li>
+          <li><Typography variant="body1">The list goes on...</Typography></li>
         </ul>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          In my own research, I’ve seen firsthand how powerful reappraisal can be. I’ve conducted many studies where participants were guided to reappraise their challenges, and the feedback has been overwhelmingly positive. People often share how this simple yet powerful tool helped them see their problems in a new light and feel more hopeful and empowered.
+          In my own research, I’ve seen firsthand how powerful reappraisal can be. I’ve conducted many studies where participants were guided to reappraise their challenges and the feedback has been overwhelmingly positive. People often share how this simple yet powerful tool helped them see their problems in a new light and feel better equipped to handle them.
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
           The positive feedback in my own research from participants inspired me to make this process accessible to everyone. Whether you’re navigating a tough situation, feeling stuck, or just looking for a way to better manage your emotions, this tool is here to guide you through rethinking and reframing your perspective.
