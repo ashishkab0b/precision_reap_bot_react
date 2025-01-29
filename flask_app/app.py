@@ -28,11 +28,11 @@ def create_app(config=CurrentConfig):
 
     # Register Blueprints
     from flask_app.blueprints.auth import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     from flask_app.blueprints.chat import chat_bp
-    app.register_blueprint(chat_bp, url_prefix='/chat')
+    app.register_blueprint(chat_bp, url_prefix='/api/chat')
     from flask_app.blueprints.user import user_bp
-    app.register_blueprint(user_bp, url_prefix='/user')
+    app.register_blueprint(user_bp, url_prefix='/api/user')
     
     # User loader
     from db.db_session import get_session

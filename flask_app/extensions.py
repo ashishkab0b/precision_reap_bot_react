@@ -65,7 +65,7 @@ def init_extensions(app):
     # login_manager.login_view = 'auth.login'
     login_manager.login_view = None
     cors.init_app(app, resources={
-        r"/*": {
+        r"/api/*": {
             "origins": [
                 "https://js.stripe.com", 
                 "https://m.stripe.network",
