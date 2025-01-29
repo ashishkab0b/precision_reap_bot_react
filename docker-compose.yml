@@ -42,3 +42,11 @@ services:
       - ./nginx/logs:/var/log/nginx  # Mount the entire logs directory
     depends_on:
       - flask-backend
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot
+    depends_on:
+      - nginx
