@@ -21,17 +21,12 @@ class BaseConfig:
     MAIL_USE_SSL = False
     MAIL_SUPPORT_RECIPIENT = os.environ['MAIL_SUPPORT_RECIPIENT']
     
-    TELEGRAM_SECRET_KEY = os.environ['TELEGRAM_SECRET_KEY']
-    MY_TELEGRAM_ID = os.environ['MY_TELEGRAM_ID']
-    BOT_USER_AGENTS = ['TelegramBot']
-    
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
     SQLALCHEMY_ENGINE_OPTIONS = {'connect_args': {'options': '-csearch_path=public'}}
 
     RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', None)
     
     SQLALCHEMY_DATABASE_URI = os.environ['SQLALCHEMY_DATABASE_URI']
-    
     
     REDDIT_CLIENT_ID = os.environ['REDDIT_CLIENT_ID']
     REDDIT_CLIENT_SECRET = os.environ['REDDIT_CLIENT_SECRET']

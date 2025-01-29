@@ -113,42 +113,4 @@ async def send_message(request: Request):
 
     return resp
 
-# @app.post("/label_issue")
-# async def label_issue(request: Request):
-#     logger.debug(f"Received request to /label_issue")
-#     data = await request.json()
-#     convo_id = data.get('convo_id')
-    
-#     with get_session() as session:
-#         try:
-#             msgs = get_conversation_messages(session=session, conversation_id=convo_id)
-#             system_msg = {"role": "developer", "content": prompts['label_issue']}
-#             issue_msgs = [{"role": msg.role.lower(), "content": msg.content} for msg in msgs if msg.state == ConvoStateEnum.ISSUE]
-#             query_msgs = [system_msg] + issue_msgs
-#             gpt_query_output = Chatbot.query_gpt(query_msgs)
-#             resp = gpt_query_output["content"]
-#         except Exception as e:
-#             logger.error(f"Error in /label_issue")
-#             logger.exception(e)
-#             session.rollback()
-#             return {"error": "Internal server error"}
-        
-#         try:
-#             with get_session() as session:
-#                 convo = get_conversation_by_id(session=session, convo_id=convo_id)
-#                 convo = update_conversation(session=session, convo=convo, oneline_summary=resp)
-#                 session.commit()
-#                 logger.info(f"Updated conversation={convo_id} with label: {resp}")
-#                 return {"success": True}
-#         except Exception as e:
-#             logger.error(f"Error in /label_issue")
-#             logger.exception(e)
-#             session.rollback()
-#             return {"error": "Internal server error"}
-        
-    
-#     return {"success": True}
-
-
-
     
