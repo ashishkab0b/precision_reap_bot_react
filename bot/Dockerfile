@@ -1,5 +1,4 @@
-# flask_app/Dockerfile
-
+# bot/Dockerfile
 
 FROM python:3.11-slim
 
@@ -17,13 +16,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./db /app/db
 
 # Copy the application code
-COPY ./flask_app /app/flask_app
+COPY ./bot /app/bot
 
 # Create the logs directory
 RUN mkdir -p /app/logs
 
 # Expose port 8000 for Gunicorn
-EXPOSE 8000
+EXPOSE 8001
 
 # Command to run the application
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "run:app"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "bot.bot:app", "--bind", "0.0.0.0:8001", "--workers", "4"]

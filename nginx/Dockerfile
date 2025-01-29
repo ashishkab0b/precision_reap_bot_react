@@ -1,15 +1,15 @@
 # Step 1: Build the React App
-FROM node:18-alpine as react-build
+FROM node:18-alpine AS react-build
 
 # Set working directory
 WORKDIR /app
 
 # Copy package.json and package-lock.json and install dependencies
-COPY ./react_frontend/package.json ./react_frontend/package-lock.json ./
+COPY ./react_app/package.json ./react_app/package-lock.json ./
 RUN npm install
 
 # Copy the React app source code and build
-COPY ./react_frontend ./
+COPY ./react_app ./
 RUN npm run build
 
 # Step 2: Use Nginx to Serve the Built React App

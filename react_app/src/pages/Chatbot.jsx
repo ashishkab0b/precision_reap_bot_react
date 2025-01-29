@@ -9,6 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import UserProfileDialog from "../components/UserProfileDialog";
 
 const Chatbot = () => {
+  const [refreshConvoNav, setRefreshConvoNav] = useState(false);
   const [selectedConvoId, setSelectedConvoId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -181,6 +182,11 @@ const Chatbot = () => {
 
         // Append the bot's message
         setMessages((prevMessages) => [...prevMessages, ...botMessages]);
+
+        if (botMessages.length + messages.length >= 3) {
+          setRefreshConvoNav(true);
+          setTimeout(() => setRefreshConvoNav(false), 500); // Reset after triggering refresh
+        }
       }
     } catch (error) {
       console.error(`Error sending ${responseType} response:`, error);
@@ -210,7 +216,7 @@ const Chatbot = () => {
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      <ConvoNav onConvoSelect={handleConvoSelect} />
+      <ConvoNav onConvoSelect={handleConvoSelect} refreshConvoNav={refreshConvoNav} />
 
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}>
         {selectedConvoId ? ( // <-- Conditional rendering for selected chat

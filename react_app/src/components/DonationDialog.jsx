@@ -27,9 +27,10 @@ function DonationDialog({ open, onClose }) {
                     justifyContent="center"
                 >
                     <stripe-buy-button
-                        buy-button-id="buy_btn_1QdCKmGAf1R453AQH8vl4nwX"
-                        publishable-key="pk_live_51QdBvMGAf1R453AQL9xskuy6XyHKbYORN3I4AV1KhsDuvGnNRR6QV3CsIiZ2rbnRBg65F34PEii9esiviIOSEt2n00Xi1lwmqe"
-                    />
+                    buy-button-id="buy_btn_1Qm6hKGAf1R453AQkVNpzEuK"
+                    publishable-key="pk_live_51QdBvMGAf1R453AQL9xskuy6XyHKbYORN3I4AV1KhsDuvGnNRR6QV3CsIiZ2rbnRBg65F34PEii9esiviIOSEt2n00Xi1lwmqe"
+                    >
+                    </stripe-buy-button>
                 </Box>
             </DialogContent>
             <DialogActions>

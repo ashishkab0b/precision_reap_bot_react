@@ -1,4 +1,4 @@
-# crud/__init__.py
+# db/crud.py
 
 from typing import Optional, List, Dict
 from sqlalchemy import select, func

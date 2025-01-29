@@ -1,3 +1,5 @@
+# bot/bot.py
+
 from fastapi import FastAPI, Request
 import yaml
 from pathlib import Path
