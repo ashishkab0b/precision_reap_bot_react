@@ -1,3 +1,5 @@
+// react_app/src/pages/Chatbot.jsx
+
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Button } from "@mui/material";
 import ConvoNav from "../components/ConvoNav";
@@ -7,6 +9,7 @@ import ChatProgress from "../components/ChatProgress";
 import api from "../api/axios";
 import { useAuth } from "../contexts/AuthContext";
 import UserProfileDialog from "../components/UserProfileDialog";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Chatbot = () => {
   const [refreshConvoNav, setRefreshConvoNav] = useState(false);
@@ -15,6 +18,17 @@ const Chatbot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedConvoState, setSelectedConvoState] = useState([]);
   
+  // Check if the user is coming from the Help page with request to start a new chat
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (location.state?.newChat) {
+      handleNewChat();
+      navigate("/chat", { replace: true });  // Clear the state
+    }
+  }, [location.state]);
+
+
   // Bring in user info and helper from AuthContext
   const { user, isAuthenticated, isProfileComplete, refreshUser } = useAuth();
   

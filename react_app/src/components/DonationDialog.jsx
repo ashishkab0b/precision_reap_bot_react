@@ -18,7 +18,7 @@ function DonationDialog({ open, onClose }) {
                 Hi! I’m a graduate student passionate about making mental health tools accessible and effective. 
                 If you find this bot helpful and want to support its development, 
                 feel free to leave a donation. 
-                Every bit helps, but no pressure—I’m just glad you’re here! 🩵
+                Every bit helps, but please feel no pressure—I’m just glad you’re here! 🩵
                 </Typography>
 
                 <Box
