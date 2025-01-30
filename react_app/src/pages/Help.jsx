@@ -63,9 +63,9 @@ function Help() {
               </Box>
             </li>
           </ul>
-          <Typography variant="body1" sx={{ mb: 2 }}>
+          {/* <Typography variant="body1" sx={{ mb: 2 }}>
           It’s important to use reappraisal in conjunction with other strategies and to be mindful of when it’s appropriate to use it.
-        </Typography>
+        </Typography> */}
 
 
         <Typography variant="h5" gutterBottom sx={{ color: "text.primary" }}>
