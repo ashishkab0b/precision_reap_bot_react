@@ -33,6 +33,8 @@ def create_app(config=CurrentConfig):
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
     from flask_app.blueprints.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
+    from flask_app.blueprints.support import support_bp
+    app.register_blueprint(support_bp, url_prefix='/api/support')
     
     # User loader
     from db.db_session import get_session
