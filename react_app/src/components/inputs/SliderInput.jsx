@@ -10,7 +10,6 @@ const SliderInput = ({
   step = 1,
   defaultValue = null, // If null => no thumb visible initially
   labels = ["Not at all", "Slightly", "Moderately", "Very much", "Extremely"],
-  botMsgId,
   questionId,
   onSubmit,
 }) => {

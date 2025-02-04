@@ -1,12 +1,20 @@
 start:
-  response_type: text
-  content:
-    Hello! Please tell me about an issue you're facing for which you would like to brainstorm cognitive reappraisals.
-  options: []
+  responseType: text
+  content: |
+    <p>Hello! Please think of an issue in your life that has been bothering you. This issue should be something that really matters to you and preferably something that is an ongoing or recurring issue that may potentially continue to bother you in the future. The issue could be something that is happening in the outside world, or it could be a mental or emotional pattern that is interfering with your life. <p/><p> Some examples of relevant issues are:</p>
+      <ul>
+        <li>a chronic illness of yours or of a loved one</li>
+        <li>a disagreement with someone (e.g. partner, friend, family member, neighbor, etc.) that has re-occurred or lasted more than one day</li>
+        <li>something you are dissatisfied with in your job</li>
+        <li>a trait about yourself you do not like (e.g. frequent procrastination)</li>
+        <li>a social or political issue which you care deeply about</li>
+        <li>an unwanted emotional pattern (e.g. outbursts of disproportionate anger)</li>
+      </ul>
+  options: {}
 
 
 rate_issue_neg: 
-  response_type: slider
+  responseType: slider
   content: On a scale of 0-100, how negatively do you feel about this issue?
   options: 
     min: 0
@@ -20,7 +28,7 @@ rate_issue_neg:
       - Extremely negative
 
 rate_issue_pos:
-  response_type: slider
+  responseType: slider
   content: On a scale of 0-100, how positively do you feel about this issue?
   options: 
     min: 0
@@ -34,51 +42,51 @@ rate_issue_pos:
       - Extremely positive
 
 
-rate_reap_1_success:
-  response_type: slider
-  content: On a scale of 0-100, how helpful do you find this reappraisal?
+
+intro_rate_vals:
+  responseType: continue
+  content: |
+    <p>Thank you for telling us about your issue. In the next section of the study, we will show you a list of values and ask you to rate how important those values are to you.</p>
+    <p>When we say "important," we refer to how much these values shape the way you evaluate the world around you and influence your decisions.</p>
+    <p>We will ask you about 32 values in total.</p>
+    <p><b>Please recognize that not all values can be of equal (or maximum) importance.</b> This is because choices in life often require prioritizing one value over another, and in those cases, we must decide which value is more important.</p>
+    <p>Thus, when filling out the survey, try to give each value a different numerical rating than the other values as best you can.</p>
+  options: {}
+
+rate_val:
+  responseType: slider
+  content: <p><b>{val_label}</b> - {val_description}</p> <p>On a scale of 0-100, how important is this value to you?</p>
   options: 
     min: 0
     max: 100
     step: 1
     labels:
-      - Not helpful at all
-      - Slightly helpful
-      - Moderately helpful
-      - Very helpful
-      - Extremely helpful
+      - Not important at all
+      - Slightly important
+      - Moderately important
+      - Very important
+      - Extremely important
 
-rate_reap_1_care:
-  response_type: slider
-  content: On a scale of 0-100, how well do you feel this reappraisal addresses what you care about?
-  options: 
-    min: 0
-    max: 100
-    step: 1
-    labels:
-      - Not well at all
-      - Slightly well
-      - Moderately well
-      - Very well
-      - Extremely well
+intro_rank_reaps:
+  responseType: continue
+  content: |
+    <p>Thank you for rating the values. In the next section of the study, we will show you different reframings of the issue that are intended to help you feel better. Please read each reframing carefully and rank them in order of how helpful you find them.</p>
 
-rate_reap_1_believe:
-  response_type: slider
-  content: On a scale of 0-100, how much do you feel this reappraisal is an accurate interpretation?
-  options: 
-    min: 0
-    max: 100
-    step: 1
-    labels:
-      - Not accurate at all
-      - Slightly accurate
-      - Moderately accurate
-      - Very accurate
-      - Extremely accurate
+rank_reaps:
+  responseType: ranking
+  content: Please rank the following reframings in order of how helpful they are in helping you feel better by placing the most helpful at the top and the least helpful at the bottom.
 
-rate_reap_1_neg: 
-  response_type: slider
-  content: On a scale of 0-100, how negatively do you now feel about this issue?
+
+intro_rate_reaps:
+  responseType: continue
+  content: |
+    <p>Thank you for ranking the reframings. In the next section of the study, we will show you the reframings again and ask you to rate them on a few different dimensions.</p>
+  options: {}
+
+
+rate_reap_neg: 
+  responseType: slider
+  content: <p>{reap_text}</p><p> With this reframing in mind, on a scale of 0-100, how negatively do you now feel about this issue?
   options: 
     min: 0
     max: 100
@@ -90,10 +98,9 @@ rate_reap_1_neg:
       - Very negative
       - Extremely negative
 
-
-rate_reap_1_pos:
-  response_type: slider
-  content: On a scale of 0-100, how positively do you now feel about this issue?
+rate_reap_pos:
+  responseType: slider
+  content: <p>{reap_text}</p><p> With this reframing in mind, on a scale of 0-100, how positively do you now feel about this issue?
   options: 
     min: 0
     max: 100
@@ -105,25 +112,23 @@ rate_reap_1_pos:
       - Very positive
       - Extremely positive
 
-
-rate_reap_2_success:
-  response_type: slider
-  content: On a scale of 0-100, how helpful do you find this reappraisal?
+rate_reap_success:
+  responseType: slider
+  content: <p>{reap_text}</p><p> On a scale of 0-100, how successful is this reframing in helping you feel better?
   options: 
     min: 0
     max: 100
     step: 1
     labels:
-      - Not helpful at all
-      - Slightly helpful
-      - Moderately helpful
-      - Very helpful
-      - Extremely helpful 
+      - Not successful at all
+      - Slightly successful
+      - Moderately successful
+      - Very successful
+      - Extremely successful
 
-
-rate_reap_2_care:
-  response_type: slider
-  content: On a scale of 0-100, how well do you feel this reappraisal addresses what you care about?
+rate_reap_care:
+  responseType: slider
+  content: <p>{reap_text}</p><p> On a scale of 0-100, how well do you feel this reframing addresses what you care about?
   options: 
     min: 0
     max: 100
@@ -134,55 +139,8 @@ rate_reap_2_care:
       - Moderately well
       - Very well
       - Extremely well
-
-
-rate_reap_2_believe:
-  response_type: slider
-  content: On a scale of 0-100, how much do you feel this reappraisal is an accurate interpretation?
-  options: 
-    min: 0
-    max: 100
-    step: 1
-    labels:
-      - Not accurate at all
-      - Slightly accurate
-      - Moderately accurate
-      - Very accurate
-      - Extremely accurate
-
-rate_reap_2_neg:
-  response_type: slider
-  content: On a scale of 0-100, how negatively do you now feel about this issue?
-  options: 
-    min: 0
-    max: 100
-    step: 1
-    labels:
-      - Not negative at all
-      - Slightly negative
-      - Moderately negative
-      - Very negative
-      - Extremely negative
-
-rate_reap_2_pos:
-  response_type: slider
-  content: On a scale of 0-100, how positively do you now feel about this issue?
-  options: 
-    min: 0
-    max: 100
-    step: 1
-    labels:
-      - Not positive at all
-      - Slightly positive
-      - Moderately positive
-      - Very positive
-      - Extremely positive
 
 complete:
-  response_type: noinput
-  content: You have now completed the cognitive reappraisal exercise. Feel free to open a new chat if you'd like to do it again.
-  options: []
-
-
-
-
+  responseType: noinput
+  content: You have now completed the reframing exercise. Feel free to open a new chat if you'd like to do it again.
+  options: {}

@@ -4,8 +4,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 from sqlalchemy.orm import Query
-from flask_mail import Mail
-from flask_login import LoginManager
 
 
 class SoftDeleteQuery(Query):
@@ -53,24 +51,16 @@ class SoftDeleteQuery(Query):
 db = SQLAlchemy(query_class=SoftDeleteQuery)
 migrate = Migrate()
 cors = CORS()
-mail = Mail()
-login_manager = LoginManager()
 
 def init_extensions(app):
 
     db.init_app(app)
     migrate.init_app(app, db)
-    mail.init_app(app)
-    login_manager.init_app(app)
-    # login_manager.login_view = 'auth.login'
-    login_manager.login_view = None
     cors.init_app(app, resources={
         r"/api/*": {
             "origins": [
                 "https://js.stripe.com", 
                 "https://m.stripe.network",
-                "http://reappraise.it",
-                "https://reappraise.it", 
                 "http://localhost:3000", 
                 "http://localhost:4173", 
                 "http://localhost:5173", 
@@ -83,6 +73,6 @@ def init_extensions(app):
         }
     }) 
     
-    from db.models import User, Conversation, Message, Support, Donation
+    from db.models import Conversation, Message
     
     

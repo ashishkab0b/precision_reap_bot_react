@@ -6,7 +6,7 @@ from flask_app.logger_setup import setup_logger
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Import extensions
-from flask_app.extensions import init_extensions, login_manager, db
+from flask_app.extensions import init_extensions, db
 from flask_app.config import CurrentConfig
 
 def create_app(config=CurrentConfig):
@@ -27,22 +27,10 @@ def create_app(config=CurrentConfig):
     
 
     # Register Blueprints
-    from flask_app.blueprints.auth import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     from flask_app.blueprints.chat import chat_bp
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
-    from flask_app.blueprints.user import user_bp
-    app.register_blueprint(user_bp, url_prefix='/api/user')
-    from flask_app.blueprints.support import support_bp
-    app.register_blueprint(support_bp, url_prefix='/api/support')
     
-    # User loader
     from db.db_session import get_session
-    from db.crud import get_user_by_id
-    @login_manager.user_loader
-    def load_user(user_id):
-        with get_session() as session:
-            return get_user_by_id(session, user_id)
         
     # Health Check
     @app.route('/health', methods=['GET'])
@@ -53,12 +41,6 @@ def create_app(config=CurrentConfig):
     # @app.before_request
     # def log_request():
     #     logger.info(f"{request.method} {request.url}")
-        
-
-    # Error Handlers
-    @login_manager.unauthorized_handler
-    def unauthorized():
-        return jsonify({'error': 'Unauthorized access'}), 401
     
     @app.errorhandler(404)
     def not_found_error(e):

@@ -6,7 +6,8 @@ load_dotenv()
 
 class BaseConfig:
     openai_api_key = os.environ['OPENAI_API_KEY']
-    openai_chat_model = "gpt-4o-mini"
+    openai_chat_model = "gpt-4o"
+    # openai_chat_model = "gpt-4o-mini"
     openai_temperature = 1
 
 

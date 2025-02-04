@@ -5,6 +5,7 @@ import TextInput from "./inputs/TextInput";
 import SliderInput from "./inputs/SliderInput";
 import ContinueInput from "./inputs/ContinueInput";
 import NoInput from "./inputs/NoInput";
+import RankingInput from "./inputs/RankingInput";
 // import MultiSelectInput from "./inputs/MultiSelectInput";
 
 const ResponseFactory = ({
@@ -31,6 +32,14 @@ const ResponseFactory = ({
           step={options?.step ?? 1}
           defaultValue={options?.default_value ?? null}
           labels={options?.labels ?? ["Not at all", "Slightly", "Moderately", "Very much", "Extremely"]}
+          questionId={options?.question_id ?? "unknown_field"}
+          onSubmit={onSubmit}
+        />
+      );
+    case "ranking":
+      return (
+        <RankingInput
+          items={options?.items ?? []}
           questionId={options?.question_id ?? "unknown_field"}
           onSubmit={onSubmit}
         />

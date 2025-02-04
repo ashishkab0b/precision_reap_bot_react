@@ -1,111 +1,98 @@
 // react_app/src/pages/Chatbot.jsx
 
-import React, { useState, useEffect } from "react";
-import { Box, Typography, Button } from "@mui/material";
-import ConvoNav from "../components/ConvoNav";
+import React, { useRef, useState, useEffect } from "react";
+import { Box, Typography } from "@mui/material";
 import MessageList from "../components/MessageList";
 import ResponseFactory from "../components/ResponseFactory";
 import ChatProgress from "../components/ChatProgress";
 import api from "../api/axios";
-import { useAuth } from "../contexts/AuthContext";
-import UserProfileDialog from "../components/UserProfileDialog";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+
 
 const Chatbot = () => {
-  const [refreshConvoNav, setRefreshConvoNav] = useState(false);
-  const [selectedConvoId, setSelectedConvoId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedConvoState, setSelectedConvoState] = useState([]);
-  
-  // Check if the user is coming from the Help page with request to start a new chat
-  const location = useLocation();
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (location.state?.newChat) {
-      handleNewChat();
-      navigate("/chat", { replace: true });  // Clear the state
-    }
-  }, [location.state]);
+  const [convoState, setConvoState] = useState([]);
+  const [convoId, setConvoId] = useState(null);
+  const [error, setError] = useState(null);
+  const hasAttemptedStart = useRef(false); // Track if we already tried starting a conversation
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pidParam = searchParams.get("pid");
+  const codeParam = searchParams.get("code");
 
-  // Bring in user info and helper from AuthContext
-  const { user, isAuthenticated, isProfileComplete, refreshUser } = useAuth();
-  
-  // For controlling whether we show the user info form
-  const [showUserInfoDialog, setShowUserInfoDialog] = useState(false);
-
-
-  // Warn before leaving the page if a conversation is in progress
-  useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      if (selectedConvoId && selectedConvoState.some((state) => !state.completed)) {
-        event.preventDefault();
-        event.returnValue =
-          "You have an active conversation. Are you sure you want to leave?";
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [selectedConvoId, selectedConvoState]);
-
+  //
   // ---------------------------------------
-  // 1. Function to fetch messages by convo
+  // Conversation management
   // ---------------------------------------
-  const fetchMessages = async (convoId) => {
+  //
+
+  // Function to start a new conversation
+  const startNewConversation = async (pid) => {
+    if (hasAttemptedStart.current) return; // Prevent infinite retry loops
+    hasAttemptedStart.current = true; // Mark as attempted
+  
     try {
-      const response = await api.get("/chat/get_messages", {
-        params: { conversation_id: convoId },
-      });
-      if (response.status === 200) {
-        const fetchedMessages = response.data.map((msg) => ({
-          msg_id: msg.msg_id,
-          convo_id: msg.convo_id,
-          content: msg.content,
-          role: msg.role,
-          responseType: msg.response_type,
-          options: msg.options,
-        }));
-        setMessages(fetchedMessages);
+      const response = await api.post("/chat/new_chat", { pid: pid });
+  
+      if (response.status === 201) {
+        setConvoId(response.data.convoId);
+        setConvoState(response.data.state);
+        setSearchParams({ pid: pidParam, code: response.data.code });
+        setMessages(response.data.messages);
       }
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error("Error starting new conversation:", error);
     }
   };
 
-  const fetchConversation = async (convoId) => {
+  const fetchConversation = async (pid, code) => {
     try {
-      const response = await api.get("/chat/get_conversation", {
-        params: { conversation_id: convoId },
-      });
-      if (response.status === 200) {
-        const fetchedConvo = {
-          convo_id: response.data.convo_id,
-          user_id: response.data.user_id,
-          state: response.data.state,
-          label: response.data.oneline_summary,
-          ephemeral: response.data.ephemeral,
-          last_active_at: response.data.last_active_at,
-        };
-        setSelectedConvoState(fetchedConvo.state);
-        console.log("fetchedConvo", fetchedConvo);
-      }
+        const response = await api.get("/chat/get_conversation", {
+            params: { pid, code },
+        });
+        if (response.status === 200) {
+          if (response.data.exists === true) {
+            setConvoId(response.data.convoId);
+            setConvoState(response.data.state);
+            setMessages(response.data.messages);
+          } else {
+            await startNewConversation(pid);
+          }
+        }
     } catch (error) {
-      console.error("Error fetching conversation:", error);
+        console.error("Error fetching conversation:", error);
     }
-  };
+};
 
+  //
   // ---------------------------------------
-  // 2. Handler to set selected conversation
+  // Check PID and Code on initial render
   // ---------------------------------------
-  const handleConvoSelect = (convoId) => {
-    setSelectedConvoId(convoId);
-    fetchMessages(convoId);
-    fetchConversation(convoId);
-  };
+  //
+  useEffect(() => {
+    // 1) If there is no pid, show an error
+    if (!pidParam) {
+      setError("Error: No participant ID (pid) was provided in the URL. Please contact the researcher.");
+      return;
+    }
+
+    // 2) If there is no code, start a new conversation
+    if (!codeParam) {
+      console.log('No code found, starting new conversation');
+      startNewConversation(pidParam);
+    } else {
+      // 3) If there is a code, fetch existing conversation
+      //    If it's invalid, startNewConversation will be called in catch
+      fetchConversation(pidParam, codeParam);
+    }
+  }, [pidParam, codeParam]); // re-run if params change
+
+  //
+  // ---------------------------------------
+  // Chat functionality
+  // ---------------------------------------
+  //
 
   // The last assistant message determines the next input type
   const lastBotMessage = messages
@@ -113,50 +100,22 @@ const Chatbot = () => {
     .reverse()
     .find((msg) => msg.role === "assistant");
 
-  // ---------------------------------------
-  // 2a. Actually create a new conversation
-  // ---------------------------------------
-  const createNewConversation = async () => {
-    try {
-      const response = await api.post("/chat/new_chat");
-      if (response.status === 200 && response.data.convo_id) {
-        const newConvoId = response.data.convo_id;
-        handleConvoSelect(newConvoId); // Immediately select the new chat
-      }
-    } catch (error) {
-      console.error("Error creating new chat:", error);
-    }
-  };
-
-  // Called when user clicks "Start a New Chat"
-  // If the user profile is incomplete, show the info dialog first
-  const handleNewChat = () => {
-    if (!isProfileComplete) {
-      setShowUserInfoDialog(true);
-    } else {
-      createNewConversation();
-    }
-  };
-
-  // ---------------------------------------
-  // 3. Handles user input
-  // ---------------------------------------
   const handleUserResponse = async (
     content,
     responseType = "text",
-    options = null,
+    options = null
   ) => {
     // Ensure a conversation is selected
-    if (!selectedConvoId) {
+    if (!convoId) {
       console.error("No conversation selected.");
       return;
     }
 
-    // User message object
+    // Build user message object
     const userMessage = {
-      msg_id: Date.now(), // Temporary ID until server assigns one
-      convo_id: selectedConvoId,
-      convo_state: selectedConvoState,
+      msgId: Date.now(), // Temporary ID until server assigns one
+      convoId: convoId,
+      convoState: convoState,
       content: content,
       role: "user",
       responseType: responseType,
@@ -165,42 +124,37 @@ const Chatbot = () => {
 
     // Optimistically update UI with the user's message
     setMessages((prevMessages) => [...prevMessages, userMessage]);
-
-    // Start loading
     setIsLoading(true);
 
     try {
-      // Send the message to the Flask endpoint
+      // Send the user message to the server
       const response = await api.post("/chat/send_message", {
-        conversation_id: selectedConvoId,
-        convo_state: selectedConvoState,
+        convoId: convoId,
+        convoState: convoState,
         content: content,
-        response_type: responseType,
+        responseType: responseType,
         options: options,
       });
 
       if ((response.status === 200 || response.status === 201) && response.data) {
-        // Wrap the single bot object in an array
-        const botMessages = [{
-          msg_id: response.data.msg_id || Date.now() + Math.random(),
-          role: "assistant",
-          convo_id: response.data.convo_id,
-          convo_state: response.data.convo_state,
-          content: response.data.content,
-          responseType: response.data.response_type,
-          options: response.data.options,
-        }];
+        // Construct the bot's message from the response
+        const botMessages = [
+          {
+            msgId: response.data.msgId || Date.now() + Math.random(),
+            role: "assistant",
+            convoId: response.data.convoId,
+            convoState: response.data.convoState,
+            content: response.data.content,
+            responseType: response.data.responseType,
+            options: response.data.options,
+          },
+        ];
 
         // Update the conversation state
-        setSelectedConvoState(response.data.convo_state);
+        setConvoState(response.data.convo_state);
 
         // Append the bot's message
         setMessages((prevMessages) => [...prevMessages, ...botMessages]);
-
-        if (botMessages.length + messages.length >= 3) {
-          setRefreshConvoNav(true);
-          setTimeout(() => setRefreshConvoNav(false), 500); // Reset after triggering refresh
-        }
       }
     } catch (error) {
       console.error(`Error sending ${responseType} response:`, error);
@@ -210,99 +164,72 @@ const Chatbot = () => {
     }
   };
 
+  //
   // ---------------------------------------
-  // 4. Handle user profile submission
+  // Rendering
   // ---------------------------------------
-  const handleUserInfoSubmit = async (formData) => {
-    try {
-      // Send to the backend
-      await api.post("/user/update_user", formData);
-      // Refresh local user data
-      await refreshUser();
-      // Close the dialog
-      setShowUserInfoDialog(false);
-      // Now create the new conversation
-      createNewConversation();
-    } catch (err) {
-      console.error("Error updating user profile:", err);
-    }
-  };
+  //
+
+  if (error) {
+    // If there's an error (e.g. no pid), show it and don't render the chatbot
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 2,
+        }}
+      >
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      <ConvoNav onConvoSelect={handleConvoSelect} refreshConvoNav={refreshConvoNav} />
-
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}>
-        {selectedConvoId ? ( // <-- Conditional rendering for selected chat
-          <>
-            {/* Render the progress at the top */}
-            <ChatProgress currentState={selectedConvoState} />
+        {/* Render the progress at the top */}
+        <ChatProgress currentState={convoState} />
 
-            <Box
-              sx={{
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                maxHeight: "calc(100% - 200px)",
-                borderRadius: 1,
-                p: 2,
-                mb: 2,
-                flex: 1,
-                overflowY: "auto",
-              }}
-            >
-              <MessageList messages={messages} />
-            </Box>
+        <Box
+          sx={{
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            maxHeight: "calc(100% - 200px)",
+            borderRadius: 1,
+            p: 2,
+            mb: 2,
+            flex: 1,
+            overflowY: "auto",
+          }}
+        >
+          <MessageList messages={messages} />
+        </Box>
 
-            {isLoading && (
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                Bot is thinking...
-              </Typography>
-            )}
+        {isLoading && (
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Bot is thinking...
+          </Typography>
+        )}
 
-            {lastBotMessage && (
-              <ResponseFactory
-                responseType={lastBotMessage.responseType}
-                options={lastBotMessage.options}
-                botMsgId={lastBotMessage.msg_id}
-                onSubmit={(content) =>
-                  handleUserResponse(
-                    content,
-                    lastBotMessage.responseType,
-                    lastBotMessage.options
-                  )
-                }
-              />
-            )}
-          </>
-        ) : (
-          // ---------------------------------------
-          //  button when no chat is selected
-          // ---------------------------------------
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Button
-              variant="contained"
-              onClick={handleNewChat}
-              sx={{ fontSize: "1.2rem", padding: "1rem 2rem" }}
-            >
-              Start a New Chat
-            </Button>
-          </Box>
+        {lastBotMessage && (
+          <ResponseFactory
+            responseType={lastBotMessage.responseType}
+            options={lastBotMessage.options}
+            botMsgId={lastBotMessage.msgId}
+            onSubmit={(content) =>
+              handleUserResponse(
+                content,
+                lastBotMessage.responseType,
+                lastBotMessage.options
+              )
+            }
+          />
         )}
       </Box>
-
-      {/* Popup for user profile if incomplete */}
-      <UserProfileDialog
-        open={showUserInfoDialog}
-        onClose={() => setShowUserInfoDialog(false)}
-        onSubmit={handleUserInfoSubmit}
-        initialData={user} 
-      />
     </Box>
   );
 };

@@ -1,6 +1,6 @@
 import asyncio
 import os
-from reappraisal_generator import ReappraisalGenerator
+from reappraisal_generator_2 import ReappraisalGenerator
 import json
 
 async def main():
@@ -57,25 +57,20 @@ async def main():
     if not api_token:
         raise ValueError("The OPENAI_API_KEY environment variable is not set.")
     
-    with open('/Users/ashish/files/research/projects/vbr/precision_reap_bot_react_study/bot/val_list.json', 'r') as f:
+    with open('/Users/ashish/files/research/projects/vbr/precision_reap_bot_react_study/bot/val_list_model.json', 'r') as f:
         all_vals = json.load(f)
         
     # Instantiate ReappraisalGenerator with the full list of possible values
     reap_gen = ReappraisalGenerator(all_vals=all_vals)
-    
-    # Decide which values are "top" vs. "bottom"
-    reap_gen.set_top_n_vals(["connection", "success"])
-    reap_gen.set_bottom_n_vals(["safety", "honesty"])
+
     
     # Generate all reappraisals concurrently
-    best_top, best_bottom, general = await reap_gen.generate_all_reappraisals(messages)
+    values_reaps, general_reap = await reap_gen.generate_all_reappraisals(messages)
     
-    print("==== Best Top Reappraisal ====")
-    print(best_top)
-    print("\n==== Best Bottom Reappraisal ====")
-    print(best_bottom)
+    print("==== Value reaps ====")
+    print(json.dumps(values_reaps, indent=2))
     print("\n==== General Reappraisal ====")
-    print(general)
+    print(general_reap)
 
 if __name__ == "__main__":
     asyncio.run(main())

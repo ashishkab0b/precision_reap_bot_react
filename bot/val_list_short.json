@@ -1,0 +1,68 @@
+[
+  {
+    "name": "connection",
+    "description": "Valuing connection means recognizing the importance of forming and maintaining meaningful bonds with others. It involves seeing shared experiences and emotional closeness as critical elements when assessing personal and social well-being.",
+    "label": "Connection",
+    "short_description": "Valuing connection means appreciating the importance of forming meaningful, emotionally close bonds with others."
+  },
+  {
+    "name": "harmony",
+    "description": "Valuing interpersonal harmony means valuing peaceful and cooperative relationships among individuals. It involves viewing smooth interactions, mutual respect, and conflict resolution as vital considerations in evaluating social environments and relationships.",
+    "label": "Interpersonal Harmony",
+    "short_description": "Valuing interpersonal harmony means valuing peaceful, respectful, and cooperative relationships."
+  },
+  {
+    "name": "benevolence",
+    "description": "Valuing benevolence means valuing kindness, compassion, and the well-being of other people. It means wanting the best for other people.",
+    "label": "Benevolence",
+    "short_description": "Valuing benevolence means appreciating kindness, compassion, and a genuine care for others."
+  },
+  {
+    "name": "success",
+    "description": "Valuing success means valuing achievements as a central aspect of one's life, often measuring well-being and self-worth through accomplishments. It entails a strong focus on attaining specific outcomes and appreciating the hard work, determination, and perseverance required to reach them.",
+    "label": "Success",
+    "short_description": "Valuing success means appreciating achievements and the hard work, determination, and perseverance behind them."
+  },
+  {
+    "name": "spirituality",
+    "description": "Valuing spirituality means recognizing and appreciating a connection to something greater than oneself, such as a higher power or universal consciousness. It can involve appreciating how events in one's life are part of a larger, meaningful plan or purpose.",
+    "label": "Spirituality",
+    "short_description": "Valuing spirituality means appreciating a sense of connection to something greater than oneself."
+  },
+  {
+    "name": "diversity",
+    "description": "Valuing diversity means valuing the inclusion and celebration of different backgrounds, perspectives, and identities. It involves appreciating the richness and value that varied experiences bring when judging social and cultural contexts.",
+    "label": "Diversity",
+    "short_description": "Valuing diversity means appreciating the inclusion and celebration of different backgrounds, perspectives, and identities."
+  },
+  {
+    "name": "autonomy",
+    "description": "Valuing autonomy means valuing independence and self-governance. It involves appreciating opportunities to express one's personal freedom and the right to make one’s own choices.",
+    "label": "Autonomy",
+    "short_description": "Valuing autonomy means appreciating the importance of independence and self-governance in making personal choices."
+  },
+  {
+    "name": "stability",
+    "description": "Valuing stability means appreciating predictability and consistency. It involves appreciating when situations are reliable, and free from unexpected changes.",
+    "label": "Stability",
+    "short_description": "Valuing stability means appreciating predictability, consistency, and reliability in life."
+  },
+  {
+    "name": "safety",
+    "description": "Valuing safety means placing importance on protection from harm and danger. It involves appreciating and preferring situations where risks are minimized and security is ensured.",
+    "label": "Safety",
+    "short_description": "Valuing safety means appreciating protection from harm and preferring risk-free environments and decisions."
+  },
+  {
+    "name": "drive",
+    "description": "Valuing drive means valuing ambition and motivation toward goals. It involves appreciating the energy and determination to keep pushing forward to achieve desired outcomes.",
+    "label": "Drive",
+    "short_description": "Valuing drive means appreciating ambition and the motivation to pursue one's goals."
+  },
+  {
+    "name": "growth",
+    "description": "Valuing growth means valuing continuous learning, development, and self-improvement. It involves recognizing personal evolution and expanding capabilities as important measures of progress and fulfillment.",
+    "label": "Growth",
+    "short_description": "Valuing growth means appreciating continuous learning, development, and self-improvement for personal progress."
+  }
+]

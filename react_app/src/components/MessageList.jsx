@@ -27,7 +27,7 @@ const MessageList = ({ messages }) => {
           return content.length > 0;
         })
         .map((message) => (
-          <MessageItem key={message.msg_id || Date.now()} message={message} />
+          <MessageItem key={message.msgId || Date.now()} message={message} />
         ))}
       {/* This div will be our anchor to scroll to. */}
       <div ref={bottomRef} />

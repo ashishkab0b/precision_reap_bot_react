@@ -6,21 +6,19 @@ import { Stepper, Step, StepLabel } from "@mui/material";
 const steps = [
   "Issue Interview",
   "Rate Issue",
-  "Generate Reappraisal",
-  "Rate Reappraisal #1",
-  "Refine Reappraisal",
-  "Rate Reappraisal #2",
+  "Rate Values",
+  "Rank Reframings",
+  "Rate Reframings",
   "Complete",
 ];
 
   const stateToStepIndex = {
     issue_interview: 0,
     rate_issue: 1,
-    generate_reap: 2,
-    rate_reap_1: 3,
-    refine_reap: 4,
-    rate_reap_2: 5,
-    complete: 6,
+    rate_values: 2,
+    rank_reaps: 3,
+    rate_reaps: 4,
+    complete: 5,
   };
 
 export default function ChatProgress({ currentState }) {
