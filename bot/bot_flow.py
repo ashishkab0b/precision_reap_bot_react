@@ -35,7 +35,7 @@ with open(bot_dir / "bot_msgs.yml", "r") as f:
 with open(bot_dir / "prompts.yml", "r") as f:
     prompts = yaml.safe_load(f)
     
-with open(bot_dir / "val_list_short.json", "r") as f:
+with open(bot_dir / "val_list.json", "r") as f:
 # with open(bot_dir / "val_list.json", "r") as f:
     val_list = json.load(f)
 

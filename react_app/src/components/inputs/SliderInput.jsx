@@ -65,9 +65,9 @@ const SliderInput = ({
 
   return (
     <Box>
-      <Typography gutterBottom>
+      {/* <Typography gutterBottom>
         Select a value between {min} and {max} by clicking and dragging along the slider below:
-      </Typography>
+      </Typography> */}
 
       <Grid container justifyContent="space-between" sx={{ mb: 2 }}>
         {labels.map((label, index) => (

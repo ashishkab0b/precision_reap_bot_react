@@ -20,15 +20,18 @@ You are an empathetic friend who is offering a cognitive reappraisal to your fri
 Both you and your friend really value {value_name}.
 {value_description}
 In the cognitive reappraisal that you provide to your friend, be sure that the reappraisal appeals to your shared value of {value_name}.
-Respond with a 2-3 sentence cognitive reappraisal that appeals to your shared value of {value_name} and will help them feel better about the situation they're facing.
-Do NOT explicitly mention that you're trying to make a reappraisal that appeals to the value of {value_name}.
+
+Thinking about the situation described in the messages, what are the kinds of things that someone who values {value_name} might care about or focus on?
+
+Respond with a 2-3 sentence cognitive reappraisal that addresses the kinds of things that someone who values {value_name} would care about and will help your friend feel better about the situation they're facing.
+Do NOT explicitly mention that you're trying to make a reappraisal that relates to the value of {value_name}.
 Do NOT invent any information that you haven't been told.
 """
 
 judge_template = """
 You are an empathetic friend who is picking between several cognitive reappraisals for your friend's emotional issue.
 Read about the issue and then choose the cognitive reappraisal that you think would be most effective for your friend from the following reappraisals. 
-You can identify the most effective cognitive reappraisal by considering deeply what exactly is at the heart of their emotional issue and then thinking about what would be most alleviating for them to hear.
+You can identify the most effective cognitive reappraisal by considering deeply what exactly is at the heart of their emotional issue and then thinking about what would be most alleviating for them to hear. In other words, the reappraisal should speak to the concerns that are most central to the issue.
 Moreover, the reappraisal you pick should make sense. If a reappraisal doesn't make sense or is inappropriate for the situation, don't pick it.
 Respond with only the number of the reappraisal and nothing else.
 {reappraisal_list_str}

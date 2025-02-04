@@ -70,23 +70,23 @@ rate_val:
 intro_rank_reaps:
   responseType: continue
   content: |
-    <p>Thank you for rating the values. In the next section of the study, we will show you different reframings of the issue that are intended to help you feel better. Please read each reframing carefully and rank them in order of how helpful you find them.</p>
+    <p>Thank you for rating the values. In the next section of the study, we will show you different reframings of the issue that are intended to help you feel better. Please read each reframing carefully and rank them in order of how helpful you find them.</p> <p> (Please give the bot a moment to load the reframings.)</p>
 
 rank_reaps:
   responseType: ranking
-  content: Please rank the following reframings in order of how helpful they are in helping you feel better by placing the most helpful at the top and the least helpful at the bottom.
+  content: <p>Please rank the following reframings in order of how helpful they are in helping you feel better by placing the most helpful at the top and the least helpful at the bottom.</p>
 
 
 intro_rate_reaps:
   responseType: continue
   content: |
-    <p>Thank you for ranking the reframings. In the next section of the study, we will show you the reframings again and ask you to rate them on a few different dimensions.</p>
+    <p>Thank you for ranking the reframings. In the next section of the study, we will show you the reframings again and ask you to rate them on a few different dimensions.</p><p>One thing to keep in mind is that even though these reframings were meant to help you feel better, it's possible that they didn't work as intended. If that's the case, please rate them accordingly.</p>
   options: {}
 
 
 rate_reap_neg: 
   responseType: slider
-  content: <p>{reap_text}</p><p> With this reframing in mind, on a scale of 0-100, how negatively do you now feel about this issue?
+  content: <p>{reap_text}</p><p> If you consider the issue from the perspective of this reframing, on a scale of 0-100, how negatively do you now feel about this issue?
   options: 
     min: 0
     max: 100
@@ -100,7 +100,7 @@ rate_reap_neg:
 
 rate_reap_pos:
   responseType: slider
-  content: <p>{reap_text}</p><p> With this reframing in mind, on a scale of 0-100, how positively do you now feel about this issue?
+  content: <p>{reap_text}</p><p> If you consider the issue from the perspective of this reframing, on a scale of 0-100, how <b>positively</b> do you now feel about this issue?
   options: 
     min: 0
     max: 100
@@ -142,5 +142,5 @@ rate_reap_care:
 
 complete:
   responseType: noinput
-  content: You have now completed the reframing exercise. Feel free to open a new chat if you'd like to do it again.
+  content: At this time, please return back to the Qualtrics survey. The secret word is "treehouse".
   options: {}

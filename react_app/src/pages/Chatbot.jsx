@@ -151,7 +151,7 @@ const Chatbot = () => {
         ];
 
         // Update the conversation state
-        setConvoState(response.data.convo_state);
+        setConvoState(response.data.convoState);
 
         // Append the bot's message
         setMessages((prevMessages) => [...prevMessages, ...botMessages]);
