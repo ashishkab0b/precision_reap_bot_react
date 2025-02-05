@@ -564,6 +564,8 @@ class BotRateReaps(BotStep):
     def process_input(self, user_msg):
         super().process_input(user_msg)
         logger.debug(f"BotRateReaps.process_input: {user_msg}")
+        if user_msg["content"] == "":
+            return
         
         # Save the reappraisal rating to the DB
         with self._get_session() as session:
@@ -629,7 +631,7 @@ class BotRateReaps(BotStep):
         """
         Returns a list of rating fields still None for RATE_REAP.
         """
-        req_field_stems = ["rate_reap_neg", "rate_reap_pos", "rate_reap_success", "rate_reap_care"]
+        req_field_stems = ["rate_reap_neg", "rate_reap_pos", "rate_reap_success", "rate_reap_care", "rate_reap_insight"]
         reap_types = ["top", "bottom", "general"]
         req_fields = [f"{stem}_{reap_type}" for reap_type in reap_types for stem in req_field_stems] 
         

@@ -140,7 +140,21 @@ rate_reap_care:
       - Very well
       - Extremely well
 
+rate_reap_insight:
+  responseType: slider
+  content: <p>{reap_text}</p><p> On a scale of 0-100, to what extent does this reframing give you new insight about how to view your situation?
+  options: 
+    min: 0
+    max: 100
+    step: 1
+    labels:
+      - Not at all
+      - A little
+      - Somewhat
+      - Quite a bit
+      - A very great deal
+
 complete:
   responseType: noinput
-  content: At this time, please return back to the Qualtrics survey. The secret word is "treehouse".
+  content: At this time, please return to the Qualtrics survey. The secret word is "treehouse".
   options: {}
