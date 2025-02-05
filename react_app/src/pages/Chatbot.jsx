@@ -190,11 +190,29 @@ const Chatbot = () => {
   }
 
   return (
-    <Box sx={{ display: "flex", height: "100vh" }}>
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",       // Center the chat area horizontally
+        alignItems: "stretch",
+        width: "100%",
+        height: "100vh",
+        overflow: "hidden", // or "auto", if needed
+      }}
+    >
+      {/* Outer container to cap max width */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          maxWidth: "900px",  // Adjust to your preference (could be 800px, 900px, etc.)
+          p: 2,               // padding
+        }}
+      >
         {/* Render the progress at the top */}
         <ChatProgress currentState={convoState} />
-
+  
         <Box
           sx={{
             border: (theme) => `1px solid ${theme.palette.divider}`,
@@ -208,13 +226,13 @@ const Chatbot = () => {
         >
           <MessageList messages={messages} />
         </Box>
-
+  
         {isLoading && (
           <Typography variant="body2" sx={{ mb: 2 }}>
             Bot is thinking...
           </Typography>
         )}
-
+  
         {lastBotMessage && (
           <ResponseFactory
             responseType={lastBotMessage.responseType}

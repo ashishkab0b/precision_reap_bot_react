@@ -20,14 +20,14 @@ const ResponseFactory = ({
     case "continue":
       return (
         <ContinueInput
-          key={botMsgId}
+          key={botMsgId}  // Force re-render on new message
           onSubmit={onSubmit}
         />
       );
     case "slider":
       return (
         <SliderInput
-          botMsgId={botMsgId}
+          key={botMsgId}  // Force re-render on new message
           min={options?.min ?? 0}
           max={options?.max ?? 100}
           step={options?.step ?? 1}
@@ -40,8 +40,8 @@ const ResponseFactory = ({
     case "ranking":
       return (
         <RankingInput
+          key={botMsgId}  // Force re-render on new message
           items={options?.items ?? []}
-          key={botMsgId}
           questionId={options?.question_id ?? "unknown_field"}
           onSubmit={onSubmit}
         />
