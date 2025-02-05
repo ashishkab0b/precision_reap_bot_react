@@ -1,6 +1,6 @@
 // SliderInput.jsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Box, Slider, Button, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid";
 
@@ -37,23 +37,22 @@ const SliderInput = ({
     // If disabled, ignore changes
     if (isDisabled) return;
 
-    // If the user moves the slider for the first time
     if (!hasInteracted) {
       setHasInteracted(true);
     }
     setSliderValue(newValue);
   };
 
-  // Handle submission
-  const handleSend = () => {
-    // If still null (no default + no interaction), do nothing (or show error)
-    if (sliderValue === null) {
-      return; 
+  // Submission logic
+  const handleSend = useCallback(() => {
+    // If it's still null (no default + no interaction), do nothing
+    if (sliderValue === null || isDisabled) {
+      return;
     }
-    // Disable everything
+    // Disable after submission
     setIsDisabled(true);
 
-    // Pass sliderValue back up
+    // Pass the selected value back up
     onSubmit(sliderValue, "slider", {
       min,
       max,
@@ -61,14 +60,21 @@ const SliderInput = ({
       defaultValue,
       questionId,
     });
-  };
+  }, [sliderValue, isDisabled, onSubmit, min, max, step, defaultValue, questionId]);
+
+  // Global key listener for Enter
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter") {
+        handleSend();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSend]);
 
   return (
     <Box>
-      {/* <Typography gutterBottom>
-        Select a value between {min} and {max} by clicking and dragging along the slider below:
-      </Typography> */}
-
       <Grid container justifyContent="space-between" sx={{ mb: 2 }}>
         {labels.map((label, index) => (
           <Grid key={index}>
@@ -81,26 +87,18 @@ const SliderInput = ({
         min={min}
         max={max}
         step={step}
-        // If sliderValue is null, fallback to min just to satisfy controlled value,
-        // but we hide the thumb/track visually (see sx) until interaction.
+        // Use min as a fallback for the controlled component,
+        // but visually hide the thumb/track until user interacts or has a default value.
         value={sliderValue ?? min}
         onChange={handleSliderChange}
-        valueLabelDisplay="auto"       // Bring back numeric labels on hover/drag
-        disabled={isDisabled}          // Disable after submit
+        valueLabelDisplay="auto"
+        disabled={isDisabled}
         sx={{
-          // Hide the thumb if there's no defaultValue and user hasn't interacted
           "& .MuiSlider-thumb": {
-            visibility:
-              sliderValue !== null || hasInteracted
-                ? "visible"
-                : "hidden",
+            visibility: sliderValue !== null || hasInteracted ? "visible" : "hidden",
           },
-          // Hide the filled track if there's no defaultValue and user hasn't interacted
           "& .MuiSlider-track": {
-            opacity:
-              sliderValue !== null || hasInteracted
-                ? 1
-                : 0,
+            opacity: sliderValue !== null || hasInteracted ? 1 : 0,
           },
         }}
       />
@@ -109,7 +107,6 @@ const SliderInput = ({
         variant="contained"
         onClick={handleSend}
         sx={{ mt: 2 }}
-        // If there's no default and user hasn't moved slider, keep button disabled.
         disabled={(!hasInteracted && sliderValue === null) || isDisabled}
       >
         Submit
