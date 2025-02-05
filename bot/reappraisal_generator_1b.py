@@ -5,7 +5,7 @@ import asyncio
 import aiohttp
 import os
 from typing import List, Tuple, Dict
-from db.crud import create_analysis_data
+from db.crud import create_analysis_data, create_llm_query
 from db.db_session import get_session
 import random 
 import re
@@ -22,7 +22,7 @@ In the cognitive reappraisal that you provide to your friend, be sure that the r
 
 Thinking about the situation described in the messages, what are the kinds of things that someone who values {value_name} might care about or focus on?
 
-Respond with a 2-3 sentence cognitive reappraisal that addresses the kinds of things that someone who values {value_name} would care about and will help your friend feel better about the situation they're facing.
+Respond with a 2 sentence cognitive reappraisal that addresses the kinds of things that someone who values {value_name} would care about and will help your friend feel better about the situation they're facing.
 Do NOT explicitly mention that you're trying to make a reappraisal that relates to the value of {value_name}.
 Do NOT invent any information that you haven't been told.
 """
@@ -30,9 +30,13 @@ Do NOT invent any information that you haven't been told.
 judge_template = """
 You are an empathetic friend who is picking between several cognitive reappraisals for your friend's emotional issue.
 Read about the issue and then choose two cognitive reappraisals that you think would be most effective for your friend from the following reappraisals. 
-You can identify the two most effective cognitive reappraisals by considering deeply what exactly is at the heart of their emotional issue and then thinking about what would be most alleviating for them to hear. In other words, the most effective reappraisals should speak to the concerns that are most central to the issue.
-Moreover, the reappraisals you pick should make sense and be relevant to the issue. If a reappraisal doesn't make sense or is inappropriate for the situation, don't pick it.
+Please be aware that your friend is someone who holds the following values very dearly:
+
+{value_list_str}
+
+You can identify the two most effective cognitive reappraisals by considering deeply what exactly is at the heart of their emotional issue and then thinking about what would be most alleviating for them to hear. The most effective reappraisals should speak to the concerns that are most central to the issue. Moreover, it helps if the reappraisal directly appeals to their values as listed above. However, first and foremost, the reappraisals you pick should make sense and be relevant to the issue. If a reappraisal doesn't make sense or is inappropriate for the situation, don't pick it.
 Respond with a JSON-formatted list with exactly two elements, each of which is the number of a reappraisal in the list below. The list sits under a key called "integers". It should be parseable JSON. 
+
 {reappraisal_list_str}
 """
 
@@ -41,7 +45,7 @@ class ReappraisalGenerator:
     def __init__(self, all_vals: List[dict], convo_id: int):
         self.api_token = os.getenv("OPENAI_API_KEY")
         self.all_vals = all_vals
-        self.reap_model = "gpt-4o"
+        self.reap_model = "o1"
         self.judge_model = "o3-mini"
         self.convo_id = convo_id
         
@@ -51,11 +55,11 @@ class ReappraisalGenerator:
     
     def set_top_n_vals(self, vals: List[str]):
         """Set the selected values for 'top' reappraisals."""
-        self.selected_vals_top = [v for v in self.all_vals if v.get("name", "").lower() in vals]
+        self.selected_vals_top = [v for v in self.all_vals if v.get("name", "").lower() in [v.lower() for v in vals]]
         
     def set_bottom_n_vals(self, vals: List[str]):
         """Set the selected values for 'bottom' reappraisals."""
-        self.selected_vals_bottom = [v for v in self.all_vals if v.get("name", "").lower() in vals]
+        self.selected_vals_bottom = [v for v in self.all_vals if v.get("name", "").lower() in [v.lower() for v in vals]]
     
     async def _generate_value_reap(
         self,
@@ -75,15 +79,21 @@ class ReappraisalGenerator:
         }
         if self.reap_model in ["gpt-4o", "gpt-4o-mini"]:
             role = "system"
+            params = {
+                "temperature": 1.0
+            }
         elif self.reap_model in ["o1", "o3-mini"]:
             role = "developer"
+            params = {
+                "reasoning_effort": "medium"
+            }
         else:
             role = "developer"
         payload = {
             "model": self.reap_model,
-            "messages": msg_history + [{"role": role, "content": prompt}],
-            "temperature": 1.0,
+            "messages": msg_history + [{"role": role, "content": prompt}]
         }
+        payload.update(params)
         logger.debug(f'value reap prompt: {prompt}')
         url = "https://api.openai.com/v1/chat/completions"
         async with session.post(url, headers=headers, json=payload) as resp:
@@ -97,13 +107,25 @@ class ReappraisalGenerator:
             }
             
             with get_session() as session:
-                create_analysis_data(
-                    session=session,
-                    convo_id=self.convo_id,
-                    field=f"reap_{value_name}_text",
-                    content=reap_text
-                )
-                session.commit()
+                try:
+                    create_analysis_data(
+                        session=session,
+                        convo_id=self.convo_id,
+                        field=f"reap_{value_name}_text",
+                        content=reap_text
+                    )
+                    create_llm_query(
+                        session=session,
+                        convo_id=self.convo_id,
+                        completion=json.dumps(data),
+                        tokens_prompt=data["usage"]["prompt_tokens"],
+                        tokens_completion=data["usage"]["completion_tokens"],
+                        llm_model=self.reap_model,
+                    )
+                    session.commit()
+                except Exception as e:
+                    logger.error(f"Error in _generate_value_reap: {e}")
+                    session.rollback()
                 
             return output
     
@@ -111,10 +133,18 @@ class ReappraisalGenerator:
         """Format the list of cognitive reappraisals into a numbered string."""
         return "\n".join(f"{i+1}. {r['reap_text']}" for i, r in enumerate(reappraisal_list))
     
+    def _make_value_list_str_for_judge(self, value_list: List[dict]) -> str:
+        """Format the list of values into a string for the judge model."""
+        val_list_str = ""
+        for val in value_list:
+            val_list_str += f" - {val['name']} - {val['description']}\n"
+        return val_list_str
+    
     async def _select_reappraisal(
         self,
         session: aiohttp.ClientSession,
         reappraisal_list: List[str],
+        relevant_vals: List[dict],
         msg_history: List[dict]
     ) -> str:
         """
@@ -122,7 +152,9 @@ class ReappraisalGenerator:
         Returns the index of the chosen reappraisal from that list
         """
         reappraisal_list_str = self._make_reappraisal_list_str(reappraisal_list)
-        prompt = judge_template.format(reappraisal_list_str=reappraisal_list_str)
+        value_list_str = self._make_value_list_str_for_judge(relevant_vals)
+        prompt = judge_template.format(reappraisal_list_str=reappraisal_list_str,
+                                       value_list_str=value_list_str)
         
         headers = {
             "Content-Type": "application/json",
@@ -167,6 +199,24 @@ class ReappraisalGenerator:
         async with session.post(url, headers=headers, json=payload) as resp:
             resp.raise_for_status()
             data = await resp.json()
+            
+            with get_session() as session:
+                try:
+                    create_llm_query(
+                        session=session,
+                        convo_id=self.convo_id,
+                        completion=json.dumps(data),
+                        tokens_prompt=data["usage"]["prompt_tokens"],
+                        tokens_completion=data["usage"]["completion_tokens"],
+                        llm_model=self.judge_model,
+                    )
+                    session.commit()
+                except Exception as e:
+                    logger.error(f"Error in _select_reappraisal: {e}")
+                    session.rollback()
+                    
+                
+            
             judge_response = data["choices"][0]["message"]["content"]
             judge_response_list = json.loads(judge_response)["integers"]
             selected_indices = [int(i) - 1 for i in judge_response_list]
@@ -183,9 +233,6 @@ class ReappraisalGenerator:
         Helper: Generate a cognitive reappraisal for each of the given values concurrently,
         then pick the best one with the judge model.
         """
-        if not values:
-            # If no values provided, return an empty string or some placeholder
-            return ""
 
         tasks = []
         for val in values:
@@ -198,7 +245,12 @@ class ReappraisalGenerator:
                 )
             )
         reappraisal_list = await asyncio.gather(*tasks) # dicts containing 'reap_type' and 'reap_text'
-        selected_reappraisal_idx = await self._select_reappraisal(session, reappraisal_list, msg_history)
+        selected_reappraisal_idx = await self._select_reappraisal(
+            session=session, 
+            reappraisal_list=reappraisal_list, 
+            relevant_vals=values,
+            msg_history=msg_history, 
+            )
         # reap = reappraisal_list[selected_reappraisal_idx]  # dicts containing 'reap_type' and 'reap_text'
         reaps = [reap for i, reap in enumerate(reappraisal_list) if i in selected_reappraisal_idx]
             
@@ -220,12 +272,12 @@ class ReappraisalGenerator:
             # Create tasks for each of the three bullet points
             top_task = asyncio.create_task(
                 self._generate_and_select_value_reappraisals_for(
-                    session, self.selected_vals_top, msg_history
+                    session=session, values=self.selected_vals_top, msg_history=msg_history
                 )
             )
             bottom_task = asyncio.create_task(
                 self._generate_and_select_value_reappraisals_for(
-                    session, self.selected_vals_bottom, msg_history
+                    session=session, values=self.selected_vals_bottom, msg_history=msg_history
                 )
             )
 
