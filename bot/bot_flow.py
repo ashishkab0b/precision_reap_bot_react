@@ -351,6 +351,9 @@ class BotRateValues(BotStep):
         super().process_input(user_msg)
         logger.debug(f"BotRateValues.process_input: {user_msg}")
         
+        if user_msg["content"] == "":
+            return
+        
         # Save the value rating to the DB
         with self._get_session() as session:
             try:
