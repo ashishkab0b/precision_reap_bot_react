@@ -30,8 +30,8 @@ Do NOT invent any information that you haven't been told.
 judge_template = """
 You are an empathetic friend who is picking between several cognitive reappraisals for your friend's emotional issue.
 Read about the issue and then choose two cognitive reappraisals that you think would be most effective for your friend from the following reappraisals. 
-You can identify the two most effective cognitive reappraisals by considering deeply what exactly is at the heart of their emotional issue and then thinking about what would be most alleviating for them to hear. In other words, the reappraisals should speak to the concerns that are most central to the issue.
-Moreover, the reappraisals you pick should make sense. If a reappraisal doesn't make sense or is inappropriate for the situation, don't pick it.
+You can identify the two most effective cognitive reappraisals by considering deeply what exactly is at the heart of their emotional issue and then thinking about what would be most alleviating for them to hear. In other words, the most effective reappraisals should speak to the concerns that are most central to the issue.
+Moreover, the reappraisals you pick should make sense and be relevant to the issue. If a reappraisal doesn't make sense or is inappropriate for the situation, don't pick it.
 Respond with a JSON-formatted list with exactly two elements, each of which is the number of a reappraisal in the list below. The list sits under a key called "integers". It should be parseable JSON. 
 {reappraisal_list_str}
 """
