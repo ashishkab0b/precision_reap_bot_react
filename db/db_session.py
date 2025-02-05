@@ -5,9 +5,13 @@ from db.models import Base
 import os
 from contextlib import contextmanager
 from dotenv import load_dotenv
+from db.logger_setup import setup_logger
 
 # Load environment variables
 load_dotenv()
+
+# Set up the logger
+logger = setup_logger()
 
 # Load database URL from configuration
 DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URI")
@@ -34,8 +38,10 @@ def get_session():
     try:
         yield session
         session.commit()  # Ensure changes are committed
-    except Exception:
+    except Exception as e:
         session.rollback()  # Rollback on error
+        logger.error("Error in database transaction")
+        logger.exception(e)
         raise  # Re-raise exception for visibility
     finally:
         session.close()
