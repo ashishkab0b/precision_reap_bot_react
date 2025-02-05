@@ -23,7 +23,7 @@ In the cognitive reappraisal that you provide to your friend, be sure that the r
 
 Thinking about the situation described in the messages, what are the kinds of things that someone who values {value_name} might care about or focus on?
 
-Respond with a 2-3 sentence cognitive reappraisal that addresses the kinds of things that someone who values {value_name} would care about and will help your friend feel better about the situation they're facing.
+Respond with a 2 sentence cognitive reappraisal that addresses the kinds of things that someone who values {value_name} would care about and will help your friend feel better about the situation they're facing.
 Do NOT explicitly mention that you're trying to make a reappraisal that relates to the value of {value_name}.
 Do NOT invent any information that you haven't been told.
 """
