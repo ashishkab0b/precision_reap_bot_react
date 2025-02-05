@@ -42,8 +42,8 @@ class ReappraisalGenerator:
     def __init__(self, all_vals: List[dict], convo_id: int):
         self.api_token = os.getenv("OPENAI_API_KEY")
         self.all_vals = all_vals
-        self.reap_model = "o1"
-        # self.reap_model = "gpt-4o"
+        # self.reap_model = "o1"
+        self.reap_model = "gpt-4o"
         self.judge_model = "o3-mini"
         self.convo_id = convo_id
         
