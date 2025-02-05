@@ -1,12 +1,12 @@
 [
   {
-    "name": "connection",
-    "description": "Valuing connection means recognizing the importance of forming and maintaining meaningful bonds with others. It involves seeing shared experiences and emotional closeness as critical elements when assessing personal and social well-being.",
+    "name": "interpersonalConnection",
+    "description": "Valuing interpersonal connection means recognizing the importance of forming and maintaining meaningful bonds with others. It involves seeing shared experiences and emotional closeness as critical elements when assessing personal and social well-being.",
     "label": "Connection",
     "short_description": "Valuing connection means appreciating the importance of forming meaningful, emotionally close bonds with others."
   },
   {
-    "name": "interpersonalharmony",
+    "name": "interpersonalHarmony",
     "description": "Valuing interpersonal harmony means valuing peaceful and cooperative relationships among individuals. It involves viewing smooth interactions, mutual respect, and conflict resolution as vital considerations in evaluating social environments and relationships.",
     "label": "Interpersonal Harmony",
     "short_description": "Valuing interpersonal harmony means valuing peaceful, respectful, and cooperative relationships."
@@ -30,7 +30,7 @@
     "short_description": "Valuing spirituality means appreciating a sense of connection to something greater than oneself."
   },
   {
-    "name": "diversity",
+    "name": "humanDiversity",
     "description": "Valuing diversity means valuing the inclusion and celebration of different backgrounds, perspectives, and identities. It involves appreciating the richness and value that varied experiences bring when judging social and cultural contexts.",
     "label": "Diversity",
     "short_description": "Valuing diversity means appreciating the inclusion and celebration of different backgrounds, perspectives, and identities."
