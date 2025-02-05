@@ -48,6 +48,7 @@ intro_rate_vals:
   content: |
     <p>Thank you for telling us about your issue. In the next section of the study, we will show you a list of values and ask you to rate how important those values are to you.</p>
     <p>When we say "important," we refer to how much these values shape the way you evaluate the world around you and influence your decisions.</p>
+    <p><b>We are asking about your values IN GENERAL and not specifically as they relate to the issue you reported.</b></p>
     <p>We will ask you about 32 values in total.</p>
     <p><b>Please recognize that not all values can be of equal (or maximum) importance.</b> This is because choices in life often require prioritizing one value over another, and in those cases, we must decide which value is more important.</p>
     <p>Thus, when filling out the survey, try to give each value a different numerical rating than the other values as best you can.</p>

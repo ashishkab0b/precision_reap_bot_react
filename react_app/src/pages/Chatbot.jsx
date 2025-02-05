@@ -206,7 +206,7 @@ const Chatbot = () => {
           display: "flex",
           flexDirection: "column",
           width: "100%",
-          maxWidth: "900px",  // Adjust to your preference (could be 800px, 900px, etc.)
+          maxWidth: "900px",  
           p: 2,               // padding
         }}
       >
