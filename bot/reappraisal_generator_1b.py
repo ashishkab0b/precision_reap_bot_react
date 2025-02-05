@@ -35,6 +35,7 @@ Please be aware that your friend is someone who holds the following values very 
 {value_list_str}
 
 You can identify the two most effective cognitive reappraisals by considering deeply what exactly is at the heart of their emotional issue and then thinking about what would be most alleviating for them to hear. The most effective reappraisals should speak to the concerns that are most central to the issue. Moreover, it helps if the reappraisal directly appeals to their values as listed above. However, first and foremost, the reappraisals you pick should make sense and be relevant to the issue. If a reappraisal doesn't make sense or is inappropriate for the situation, don't pick it.
+If a reappraisal makes a claim that isn't supported by the information you've been given, don't pick it.
 Respond with a JSON-formatted list with exactly two elements, each of which is the number of a reappraisal in the list below. The list sits under a key called "integers". It should be parseable JSON. 
 
 {reappraisal_list_str}
@@ -63,7 +64,7 @@ class ReappraisalGenerator:
     
     async def _generate_value_reap(
         self,
-        session: aiohttp.ClientSession,
+        sess: aiohttp.ClientSession,
         value_name: str,
         value_description: str,
         msg_history: List[dict]
@@ -96,7 +97,7 @@ class ReappraisalGenerator:
         payload.update(params)
         logger.debug(f'value reap prompt: {prompt}')
         url = "https://api.openai.com/v1/chat/completions"
-        async with session.post(url, headers=headers, json=payload) as resp:
+        async with sess.post(url, headers=headers, json=payload) as resp:
             resp.raise_for_status()  # Raise exception for HTTP errors.
             data = await resp.json()
             reap_text = data["choices"][0]["message"]["content"].strip()
@@ -142,7 +143,7 @@ class ReappraisalGenerator:
     
     async def _select_reappraisal(
         self,
-        session: aiohttp.ClientSession,
+        sess: aiohttp.ClientSession,
         reappraisal_list: List[str],
         relevant_vals: List[dict],
         msg_history: List[dict]
@@ -196,7 +197,7 @@ class ReappraisalGenerator:
             
         }
         url = "https://api.openai.com/v1/chat/completions"
-        async with session.post(url, headers=headers, json=payload) as resp:
+        async with sess.post(url, headers=headers, json=payload) as resp:
             resp.raise_for_status()
             data = await resp.json()
             
@@ -225,7 +226,7 @@ class ReappraisalGenerator:
 
     async def _generate_and_select_value_reappraisals_for(
         self,
-        session: aiohttp.ClientSession,
+        sess: aiohttp.ClientSession,
         values: List[dict],
         msg_history: List[dict]
     ) -> dict:
@@ -238,7 +239,7 @@ class ReappraisalGenerator:
         for val in values:
             tasks.append(
                 self._generate_value_reap(
-                    session, 
+                    sess, 
                     val.get("name", ""), 
                     val.get("description", ""), 
                     msg_history
@@ -246,7 +247,7 @@ class ReappraisalGenerator:
             )
         reappraisal_list = await asyncio.gather(*tasks) # dicts containing 'reap_type' and 'reap_text'
         selected_reappraisal_idx = await self._select_reappraisal(
-            session=session, 
+            sess=sess, 
             reappraisal_list=reappraisal_list, 
             relevant_vals=values,
             msg_history=msg_history, 
@@ -268,16 +269,16 @@ class ReappraisalGenerator:
          
         Returns a tuple of (best_top_reappraisal, best_bottom_reappraisal, general_reappraisal).
         """
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as sess:
             # Create tasks for each of the three bullet points
             top_task = asyncio.create_task(
                 self._generate_and_select_value_reappraisals_for(
-                    session=session, values=self.selected_vals_top, msg_history=msg_history
+                    sess=sess, values=self.selected_vals_top, msg_history=msg_history
                 )
             )
             bottom_task = asyncio.create_task(
                 self._generate_and_select_value_reappraisals_for(
-                    session=session, values=self.selected_vals_bottom, msg_history=msg_history
+                    sess=sess, values=self.selected_vals_bottom, msg_history=msg_history
                 )
             )
 

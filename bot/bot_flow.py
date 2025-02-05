@@ -715,17 +715,22 @@ async def run_state_logic(convo_id: int, user_msg: Dict):
         step_obj.process_input(user_msg)
     # save input message to db
     with step_obj._get_session() as session:
-        msg = create_message(
-            session=session,
-            convo_id=convo_id,
-            content=step_obj.user_msg["content"],
-            role=RoleEnum.USER,
-            state=current_state,
-            response_type=step_obj.user_msg["responseType"],
-            options=user_msg["options"]
-        )
-        session.commit()
+        try:
+            msg = create_message(
+                session=session,
+                convo_id=convo_id,
+                content=step_obj.user_msg["content"],
+                role=RoleEnum.USER,
+                state=current_state,
+                response_type=step_obj.user_msg["responseType"],
+                options=user_msg["options"]
+            )
+            session.commit()
         # step_obj.user_msg["msgId"] = msg.id
+        except Exception as e:
+            logger.error(f"Error saving user message, convo_id={convo_id}")
+            logger.exception(e)
+            session.rollback()
 
     # 4) move to next state
     new_state, data = step_obj.next_state()

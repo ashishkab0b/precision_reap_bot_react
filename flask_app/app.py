@@ -29,8 +29,6 @@ def create_app(config=CurrentConfig):
     # Register Blueprints
     from flask_app.blueprints.chat import chat_bp
     app.register_blueprint(chat_bp, url_prefix='/api/chat')
-    
-    from db.db_session import get_session
         
     # Health Check
     @app.route('/health', methods=['GET'])

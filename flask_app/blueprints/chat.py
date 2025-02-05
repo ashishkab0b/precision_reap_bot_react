@@ -3,10 +3,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from db.crud import (
     get_conversation_messages, 
-    get_conversation_by_id,
-    create_conversation,
-    create_message,
-    soft_delete_conversation,
     get_conversation_by_pid_code
     )
 from db.db_session import get_session
