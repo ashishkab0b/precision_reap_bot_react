@@ -70,7 +70,7 @@ rate_val:
 intro_rank_reaps:
   responseType: continue
   content: |
-    <p>Thank you for rating the values. In the next section of the study, we will show you different reframings of the issue that are intended to help you feel better. Please read each reframing carefully and rank them in order of how helpful you find them.</p> <p> (Please give the bot a moment to load the reframings.)</p>
+    <p>Thank you for rating the values. In the next section of the study, we will show you different reframings of the issue that are intended to help you feel better. Please read each reframing carefully and rank them in order of how helpful you find them.</p> <p> (Please give the bot a moment to load the reframings after pressing continue.)</p>
 
 rank_reaps:
   responseType: ranking
@@ -84,9 +84,14 @@ intro_rate_reaps:
   options: {}
 
 
+rate_reap_step: 
+  responseType: continue
+  content: <p>{reap_text}</p>
+  options: {}
+
 rate_reap_neg: 
   responseType: slider
-  content: <p>{reap_text}</p><p> If you consider the issue from the perspective of this reframing, on a scale of 0-100, how negatively do you now feel about this issue?
+  content: <p>{reap_text}</p><p> If you consider the issue from the perspective of this reframing, on a scale of 0-100, how <b>negatively</b> do you now feel about this issue?
   options: 
     min: 0
     max: 100
@@ -114,7 +119,7 @@ rate_reap_pos:
 
 rate_reap_success:
   responseType: slider
-  content: <p>{reap_text}</p><p> On a scale of 0-100, how successful is this reframing in helping you feel better?
+  content: <p>{reap_text}</p><p> On a scale of 0-100, how <b>successful</b> is this reframing in helping you feel better?
   options: 
     min: 0
     max: 100
@@ -128,7 +133,7 @@ rate_reap_success:
 
 rate_reap_care:
   responseType: slider
-  content: <p>{reap_text}</p><p> On a scale of 0-100, how well do you feel this reframing addresses what you care about?
+  content: <p>{reap_text}</p><p> On a scale of 0-100, how well do you feel this reframing addresses <b>what you care about</b>?
   options: 
     min: 0
     max: 100
@@ -142,7 +147,7 @@ rate_reap_care:
 
 rate_reap_insight:
   responseType: slider
-  content: <p>{reap_text}</p><p> On a scale of 0-100, to what extent does this reframing give you new insight about how to view your situation?
+  content: <p>{reap_text}</p><p> On a scale of 0-100, to what extent does this reframing give you <b>new insight</b> about how to view your situation?
   options: 
     min: 0
     max: 100

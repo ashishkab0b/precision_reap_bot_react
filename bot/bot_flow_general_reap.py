@@ -23,7 +23,7 @@ from db.models import ConvoStateEnum, RoleEnum, ResponseTypeEnum, AnalysisData
 from db.crud import get_conversation_messages
 from bot.config import CurrentConfig
 from bot.logger_setup import setup_logger
-from bot.reappraisal_generator_1b import ReappraisalGenerator
+from bot.reappraisal_generator import ReappraisalGenerator
 
 logger = setup_logger()
 
@@ -35,7 +35,7 @@ with open(bot_dir / "bot_msgs.yml", "r") as f:
 with open(bot_dir / "prompts.yml", "r") as f:
     prompts = yaml.safe_load(f)
     
-with open(bot_dir / "val_list_short.json", "r") as f:
+with open(bot_dir / "val_list.json", "r") as f:
 # with open(bot_dir / "val_list.json", "r") as f:
     val_list = json.load(f)
 
@@ -512,50 +512,32 @@ class BotRankReaps(BotStep):
                 
                 reap_dict = await reap_gen.generate_all_reappraisals(msg_history)  # {"reap_top": {...}, "reap_bottom": {...}, "reap_general": {...}}
                 # put in random order and record everything
-                # reap_keys = ["reap_top", "reap_bottom", "reap_general"]
-                reap_keys = ["reap_top1", "reap_top2", "reap_bottom1", "reap_bottom2"]
-                n_reaps = len(reap_keys)
-                idx_shuffled = random.sample(range(n_reaps), n_reaps)
+                reap_keys = ["reap_top", "reap_bottom", "reap_general"]
+                idx_shuffled = random.sample(range(3), 3)
                 reap_texts_shuffled = [reap_dict[reap_keys[idx]]['reap_text'] for idx in idx_shuffled]
                 
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
-                    field='reap_top1_idx', content=str(idx_shuffled[0]))
+                    field='reap_top_idx', content=str(idx_shuffled[0]))
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
-                    field='reap_top2_idx', content=str(idx_shuffled[1]))
+                    field='reap_bottom_idx', content=str(idx_shuffled[1]))
+                create_analysis_data(session=session, convo_id=self.convo_id,
+                    field='reap_general_idx', content=str(idx_shuffled[2]))
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
-                    field='reap_bottom1_idx', content=str(idx_shuffled[2]))
+                    field='reap_top_text', content=reap_dict['reap_top']['reap_text'])
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
-                    field='reap_bottom2_idx', content=str(idx_shuffled[3]))
-                
+                    field='reap_bottom_text', content=reap_dict['reap_bottom']['reap_text'])
+                create_analysis_data(session=session, convo_id=self.convo_id,
+                    field='reap_general_text', content=reap_dict['reap_general']['reap_text'])
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
-                    field='reap_top1_text', content=reap_dict['reap_top1']['reap_text'])
+                    field='reap_top_value', content=reap_dict['reap_top']['reap_type'])
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
-                    field='reap_top2_text', content=reap_dict['reap_top2']['reap_text'])
-                create_analysis_data(
-                    session=session, convo_id=self.convo_id,
-                    field='reap_bottom1_text', content=reap_dict['reap_bottom1']['reap_text'])
-                create_analysis_data(
-                    session=session, convo_id=self.convo_id,
-                    field='reap_bottom2_text', content=reap_dict['reap_bottom2']['reap_text'])
-                
-                create_analysis_data(
-                    session=session, convo_id=self.convo_id,
-                    field='reap_top1_value', content=reap_dict['reap_top1']['reap_type'])
-                create_analysis_data(
-                    session=session, convo_id=self.convo_id,
-                    field='reap_top2_value', content=reap_dict['reap_top2']['reap_type'])
-                create_analysis_data(
-                    session=session, convo_id=self.convo_id,
-                    field='reap_bottom1_value', content=reap_dict['reap_bottom1']['reap_type'])
-                create_analysis_data(
-                    session=session, convo_id=self.convo_id,
-                    field='reap_bottom2_value', content=reap_dict['reap_bottom2']['reap_type'])
+                    field='reap_bottom_value', content=reap_dict['reap_bottom']['reap_type'])
                 
                 session.commit()
                 
@@ -583,11 +565,8 @@ class BotRateReaps(BotStep):
         super().process_input(user_msg)
         logger.debug(f"BotRateReaps.process_input: {user_msg}")
         if user_msg["content"] == "":
-            if "rate_reap_step" in user_msg["options"].get("question_id", ""):
-                user_msg = {"content": "step", "options": user_msg["options"]}
-            else:
-                return
-            
+            return
+        
         # Save the reappraisal rating to the DB
         with self._get_session() as session:
             try:
@@ -610,27 +589,27 @@ class BotRateReaps(BotStep):
         with self._get_session() as session:
             data = get_conversation_analysis_data(session, self.convo_id)
             missing_fields = self._missing_fields(data)
-            if not missing_fields:
-                # All rating questions are answered
-                with self._get_session() as session:
-                    # Update the conversation state
-                    update_conversation(
-                        session=session, 
-                        conversation=get_conversation_by_id(session, self.convo_id),
-                        state=ConvoStateEnum.COMPLETE)
-                    session.commit()
-                return (ConvoStateEnum.COMPLETE, {})  # proceed
-            else:
-                # Still have questions left
-                next_q = missing_fields[0]  # e.g. rate_reap_top
-                next_q_type = next_q.split("_")[-1]  # e.g. top, bottom, general
-                next_q_text_id = f"reap_{next_q_type}_text"
-                reap_text = [d.content for d in data if d.field == next_q_text_id][0]
-                passalong = {
-                    "question_id": next_q,
-                    "reap_text": reap_text
-                    }
-                return (ConvoStateEnum.RATE_REAPS, passalong)
+        if not missing_fields:
+            # All rating questions are answered
+            with self._get_session() as session:
+                # Update the conversation state
+                update_conversation(
+                    session=session, 
+                    conversation=get_conversation_by_id(session, self.convo_id),
+                    state=ConvoStateEnum.COMPLETE)
+                session.commit()
+            return (ConvoStateEnum.COMPLETE, {})  # proceed
+        else:
+            # Still have questions left
+            next_q = missing_fields[0]  # e.g. rate_reap_top
+            next_q_type = next_q.split("_")[-1]  # e.g. top, bottom, general
+            next_q_text_id = f"reap_{next_q_type}_text"
+            reap_text = [d.content for d in data if d.field == next_q_text_id][0]
+            passalong = {
+                "question_id": next_q,
+                "reap_text": reap_text
+                }
+            return (ConvoStateEnum.RATE_REAPS, passalong)
     
     async def generate_output(self, **kwargs):
         
@@ -652,10 +631,8 @@ class BotRateReaps(BotStep):
         """
         Returns a list of rating fields still None for RATE_REAP.
         """
-        req_field_stems = ["rate_reap_step", "rate_reap_neg", "rate_reap_pos", "rate_reap_success", "rate_reap_care", "rate_reap_insight"]
-        reap_types = ["top1", "bottom1", "top2", "bottom2"]
-        random.seed(self.convo_id)
-        random.shuffle(reap_types)
+        req_field_stems = ["rate_reap_neg", "rate_reap_pos", "rate_reap_success", "rate_reap_care", "rate_reap_insight"]
+        reap_types = ["top", "bottom", "general"]
         req_fields = [f"{stem}_{reap_type}" for reap_type in reap_types for stem in req_field_stems] 
         
         have_fields = [d.field for d in data]

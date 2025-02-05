@@ -13,19 +13,29 @@ load_dotenv()
 DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URI")
 
 # Create the engine and initialize the database
-engine = create_engine(DATABASE_URL)
-Base.metadata.create_all(bind=engine)
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=10,        # Maximum number of persistent connections
+    max_overflow=5,      # Allow up to 5 additional temporary connections
+    pool_recycle=1800,   # Close connections after 30 minutes (adjust if needed)
+    pool_pre_ping=True   # Ensure connections are alive before using them
+)
+# Base.metadata.create_all(bind=engine)
+with engine.connect() as conn:
+    # TODO: Should rather switch to using Alembic
+    Base.metadata.create_all(bind=conn)
 
 # Create a configured session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @contextmanager
 def get_session():
-    """
-    Provides a transactional scope for database operations.
-    """
-    session = SessionLocal()  # Initialize a new database session
+    session = SessionLocal()
     try:
-        yield session  # Provide the session to the context
+        yield session
+        session.commit()  # Ensure changes are committed
+    except Exception:
+        session.rollback()  # Rollback on error
+        raise  # Re-raise exception for visibility
     finally:
-        session.close()  # Ensure the session is always closed
+        session.close()

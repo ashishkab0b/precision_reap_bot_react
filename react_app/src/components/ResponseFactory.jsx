@@ -20,6 +20,7 @@ const ResponseFactory = ({
     case "continue":
       return (
         <ContinueInput
+          key={botMsgId}
           onSubmit={onSubmit}
         />
       );
@@ -40,6 +41,7 @@ const ResponseFactory = ({
       return (
         <RankingInput
           items={options?.items ?? []}
+          key={botMsgId}
           questionId={options?.question_id ?? "unknown_field"}
           onSubmit={onSubmit}
         />
