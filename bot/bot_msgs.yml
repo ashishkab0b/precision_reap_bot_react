@@ -92,7 +92,7 @@ rate_reap_step:
 
 rate_reap_neg: 
   responseType: slider
-  content: <p>{reap_text}</p><p> If you consider the issue from the perspective of this reframing, on a scale of 0-100, how <b>negatively</b> do you now feel about this issue?
+  content: <p><i>{reap_text}</i></p><p>If you consider the issue from the perspective of this reframing, on a scale of 0-100, how <b>negatively</b> do you now feel about this issue?
   options: 
     min: 0
     max: 100
@@ -106,7 +106,7 @@ rate_reap_neg:
 
 rate_reap_pos:
   responseType: slider
-  content: <p>{reap_text}</p><p> If you consider the issue from the perspective of this reframing, on a scale of 0-100, how <b>positively</b> do you now feel about this issue?
+  content: <p><i>{reap_text}</i></p><p>If you consider the issue from the perspective of this reframing, on a scale of 0-100, how <b>positively</b> do you now feel about this issue?
   options: 
     min: 0
     max: 100
@@ -120,7 +120,7 @@ rate_reap_pos:
 
 rate_reap_success:
   responseType: slider
-  content: <p>{reap_text}</p><p> On a scale of 0-100, how <b>successful</b> is this reframing in helping you feel better?
+  content: <p><i>{reap_text}</i></p><p>On a scale of 0-100, how <b>successful</b> is this reframing in helping you feel better?
   options: 
     min: 0
     max: 100
@@ -134,21 +134,21 @@ rate_reap_success:
 
 rate_reap_care:
   responseType: slider
-  content: <p>{reap_text}</p><p> On a scale of 0-100, how well do you feel this reframing addresses <b>what you care about</b>?
+  content: <p><i>{reap_text}</i></p><p>On a scale of 0-100, how much do you feel this reframing addresses <b>something you care about</b>?
   options: 
     min: 0
     max: 100
     step: 1
     labels:
-      - Not well at all
-      - Slightly well
-      - Moderately well
-      - Very well
-      - Extremely well
+      - Not at all
+      - Slightly
+      - Moderately
+      - Very much
+      - Extremely
 
 rate_reap_insight:
   responseType: slider
-  content: <p>{reap_text}</p><p> On a scale of 0-100, to what extent does this reframing give you <b>new insight</b> about how to view your situation?
+  content: <p><i>{reap_text}</i></p><p> On a scale of 0-100, to what extent does this reframing give you <b>new insight compared to before this study</b> about how to view your situation?
   options: 
     min: 0
     max: 100
