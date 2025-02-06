@@ -226,7 +226,7 @@ def create_message(
         conversation.state = state
     msg = Message(
         convo_id=convo_id,
-        content=content,
+        content=str(content),
         role=role,
         response_type=response_type,
         options=options,
@@ -294,14 +294,16 @@ def create_analysis_data(
     """
     data = AnalysisData(
         convo_id=convo_id,
-        field=field,
-        content=content,
+        field=str(field),
+        content=str(content),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         deleted_at=None
     )
     session.add(data)
     return data
+
+
 
 
 def get_conversation_analysis_data(

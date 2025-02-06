@@ -128,7 +128,7 @@ class BotStep:
 
     def process_input(self, user_msg):
         """
-        Save user input to DB (if needed) and store locally.
+        Strip whitespace and store locally.
         """
         self.user_msg = user_msg
         self.user_msg["content"] = str(self.user_msg["content"]).strip()
@@ -416,7 +416,6 @@ class BotRateValues(BotStep):
     
     def _missing_fields(self, data: AnalysisData) -> List[str]:
         
-        # get all fields in bot_msgs that start with rate_reap_1
         all_vals = [v["name"] for v in val_list]
         req_fields = [f"rate_val_{v}" for v in all_vals]
         have_fields = [d.field for d in data]
@@ -723,25 +722,25 @@ async def run_state_logic(convo_id: int, user_msg: Dict):
             return {"error": "Conversation not found."}
         current_state = convo.state
 
-    # 2) Map ConvoStateEnum -> BotStep
-    state_map = {
-        ConvoStateEnum.START: BotStart,
-        ConvoStateEnum.ISSUE_INTERVIEW: BotIssueInterview,
-        ConvoStateEnum.RATE_ISSUE: BotRateIssue,
-        ConvoStateEnum.RATE_VALUES: BotRateValues,
-        ConvoStateEnum.RANK_REAPS: BotRankReaps,
-        ConvoStateEnum.RATE_REAPS: BotRateReaps,
-        ConvoStateEnum.COMPLETE: BotComplete
-    }
+        # 2) Map ConvoStateEnum -> BotStep
+        state_map = {
+            ConvoStateEnum.START: BotStart,
+            ConvoStateEnum.ISSUE_INTERVIEW: BotIssueInterview,
+            ConvoStateEnum.RATE_ISSUE: BotRateIssue,
+            ConvoStateEnum.RATE_VALUES: BotRateValues,
+            ConvoStateEnum.RANK_REAPS: BotRankReaps,
+            ConvoStateEnum.RATE_REAPS: BotRateReaps,
+            ConvoStateEnum.COMPLETE: BotComplete
+        }
 
-    StepClass = state_map.get(current_state, BotComplete)
-    step_obj = StepClass(convo_id)
+        StepClass = state_map.get(current_state, BotComplete)
+        step_obj = StepClass(convo_id)
 
-    # 3) process user input
-    if user_msg:
-        step_obj.process_input(user_msg)
-    # save input message to db
-    with step_obj._get_session() as session:
+        # 3) process user input
+        if user_msg:
+            step_obj.process_input(user_msg)
+        # save input message to db
+
         try:
             msg = create_message(
                 session=session,
@@ -758,20 +757,19 @@ async def run_state_logic(convo_id: int, user_msg: Dict):
             logger.exception(e)
             raise
 
-    # 4) move to next state
-    new_state, data = step_obj.next_state()
-    if current_state != new_state:
-        logger.debug(f"Moving from {current_state} to {new_state}")
-        StepClass = state_map.get(new_state, BotComplete)
-        step_obj = StepClass(convo_id)
-        
+        # 4) move to next state
+        new_state, data = step_obj.next_state()
+        if current_state != new_state:
+            logger.debug(f"Moving from {current_state} to {new_state}")
+            StepClass = state_map.get(new_state, BotComplete)
+            step_obj = StepClass(convo_id)
+            
 
-    # 5) generate_output
-    bot_msg = await step_obj.generate_output(**data) or {}
-    bot_msg["convoState"] = new_state
+        # 5) generate_output
+        bot_msg = await step_obj.generate_output(**data) or {}
+        bot_msg["convoState"] = new_state
     
     # save output message to db
-    with step_obj._get_session() as session:
         try: 
             msg = create_message(
                 session=session,
@@ -790,7 +788,6 @@ async def run_state_logic(convo_id: int, user_msg: Dict):
             raise
 
     # 6) update conversation
-    with step_obj._get_session() as session:
         try:
             convo = get_conversation_by_id(session, convo_id)
             if convo:

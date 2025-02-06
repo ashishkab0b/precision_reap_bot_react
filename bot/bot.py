@@ -97,7 +97,7 @@ async def send_message(request: Request):
     data = await request.json()
 
     convo_id = data.get('convoId')
-    content = data.get('content') or ""
+    content = data.get('content') if data.get('content') is not None else ""
     response_type = data.get('responseType')
     options = data.get('options')
     
