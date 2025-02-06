@@ -1,0 +1,126 @@
+---
+title: "Preprocessing script"
+author: "Ashish"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: paper
+---
+
+Initialization
+===
+```{r, message=FALSE}
+# devtools::install_github("amehtaSF/rsurveyutils")
+library(rsurveyutils)
+library(qualtRics)
+library(here)
+library(tidyverse)
+library(tidylog)
+theme_set(theme_bw())
+```
+
+
+Preprocessing
+===
+
+Read data
+---
+```{r}
+filepath <- sprintf("%s/...csv", recent_date_dir(here("data/raw")))
+df_file <- read_survey(here(filepath))
+```
+
+Make blank codebook
+---
+```{r}
+codebook_filepath <- ""
+codebook_vars_blank <- tibble(old_col_name = names(df_file),
+                              new_col_name = "")
+codebook_values_blank <- tibble(var_regex = "",
+                                old_value = "",
+                                new_value = "")
+writexl::write_xlsx(list(variables = codebook_vars_blank,
+                         values = codebook_values_blank),
+                    here(codebook_filepath))
+
+```
+
+
+
+Read codebooks
+---
+```{r}
+codebook_vars <- readxl::read_excel(here(codebook_filepath), sheet="variables")
+codebook_values <- readxl::read_excel(here(codebook_filepath), sheet="values")
+```
+
+Process data
+---
+```{r}
+df_raw <- df_file %>% 
+  # -- remove qualtrics erroneous header -- #
+  # slice(-1) %>% 
+  # -- remove useless columns -- #
+  select(-IPAddress, -RecipientFirstName, -RecipientLastName, -RecipientEmail,
+         -ExternalReference, -LocationLatitude, -LocationLongitude,
+         -DistributionChannel, -UserLanguage) %>% 
+  rename(duration = `Duration (in seconds)`) %>% 
+  # -- add raw data file name -- #
+  mutate(rawDataFile = filepath) %>% 
+  # -- drop columns with all NA -- #
+  select(-where(~all(is.na(.)))) %>% 
+  # -- rename columns -- #
+  codebook_renamer(names_from=codebook_vars$old_col_name,
+                   names_to=codebook_vars$new_col_name)
+```
+
+```{r}
+df_recoded <- df_raw %>% 
+	# -- recode variables -- #
+	codebook_recoder(var_regex=codebook_values$var_regex,
+	                 values_from=codebook_values$old_value,
+	                 values_to=codebook_values$new_value)
+```
+
+
+```{r}
+df_proc <- df_recoded %>% 
+  # -- remove columns with all NA -- #
+  select_if(~!all(is.na(.)))
+
+
+# -- Check for duplicates -- #
+df_proc %>% 
+  group_by(pid) %>% 
+  summarize(n = n()) %>%
+  arrange(desc(n)) 
+```
+
+
+```{r, echo=FALSE}
+# ------ End Preprocessing ------ #
+# ----- Run all chunks above -----#
+```
+
+Export
+===
+```{r}
+filepath_output <- paste0("data/proc/", Sys.Date(), "/_proc.csv")
+df_proc %>% 
+  write_csv(here(filepath_output))
+```
+
+
+
+
+Session Info
+===
+```{r}
+sessionInfo()
+```
+

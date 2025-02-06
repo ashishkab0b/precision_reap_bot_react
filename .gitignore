@@ -41,6 +41,9 @@ coverage/
 .vscode/
 .idea/
 
+*.csv
+*.Rproj
+
 # Operating system files
 .DS_Store
 Thumbs.db
@@ -60,3 +63,4 @@ gpt_query.txt
 playground.ipynb
 
 notes.md
+.Rproj.user
