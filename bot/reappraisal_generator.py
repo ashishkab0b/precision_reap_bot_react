@@ -119,13 +119,18 @@ class ReappraisalGenerator:
             }
             
             with get_session() as session:
-                create_analysis_data(
-                    session=session,
-                    convo_id=self.convo_id,
-                    field=f"reap_{value_name}_text",
-                    content=reap_text
-                )
-                session.commit()
+                try:
+                    create_analysis_data(
+                        session=session,
+                        convo_id=self.convo_id,
+                        field=f"reap_{value_name}_text",
+                        content=reap_text
+                    )
+                except Exception as e:
+                    logger.error(f"Error creating analysis data")
+                    logger.exception(e)
+                    raise
+                
                 
             return output
     

@@ -95,7 +95,7 @@ class ReappraisalGenerator:
             "messages": msg_history + [{"role": role, "content": prompt}]
         }
         payload.update(params)
-        logger.debug(f'value reap prompt: {prompt}')
+        # logger.debug(f'value reap prompt: {prompt}')
         url = "https://api.openai.com/v1/chat/completions"
         async with sess.post(url, headers=headers, json=payload) as resp:
             resp.raise_for_status()  # Raise exception for HTTP errors.
@@ -123,10 +123,10 @@ class ReappraisalGenerator:
                         tokens_completion=data["usage"]["completion_tokens"],
                         llm_model=self.reap_model,
                     )
-                    session.commit()
                 except Exception as e:
-                    logger.error(f"Error in _generate_value_reap: {e}")
-                    session.rollback()
+                    logger.error(f"Error in saving generated reappraisals")
+                    logger.exception(e)
+                    raise
                 
             return output
     
@@ -211,10 +211,10 @@ class ReappraisalGenerator:
                         tokens_completion=data["usage"]["completion_tokens"],
                         llm_model=self.judge_model,
                     )
-                    session.commit()
                 except Exception as e:
-                    logger.error(f"Error in _select_reappraisal: {e}")
-                    session.rollback()
+                    logger.error(f"Error in _select_reappraisal")
+                    logger.exception(e)
+                    raise
                     
                 
             

@@ -54,13 +54,18 @@ async def new_chat(request: Request):
                                         pid=pid,
                                         convo_code=convo_code)
             session.flush()
-            first_msg = {
-                "convoId": convo.id,
-                "role": RoleEnum.ASSISTANT,
-                "responseType": ResponseTypeEnum.TEXT,
-                "content": bot_msgs['start']['content'],
-                "options": None,
-            }
+        except Exception as e:
+            logger.error(f"Error creating conversation")
+            logger.exception(e)
+            raise 
+        first_msg = {
+            "convoId": convo.id,
+            "role": RoleEnum.ASSISTANT,
+            "responseType": ResponseTypeEnum.TEXT,
+            "content": bot_msgs['start']['content'],
+            "options": None,
+        }
+        try:
             msg = create_message(session=session, 
                                  convo_id=convo.id,
                                  role=first_msg['role'],
@@ -71,21 +76,21 @@ async def new_chat(request: Request):
             
             # Update the conversation state
             convo.state = ConvoStateEnum.ISSUE_INTERVIEW
-            session.commit()
+            session.flush()
             first_msg['msgId'] = msg.id
-            
-            resp = {
-                "convoId": convo.id,
-                "convoCode": convo.convo_code,
-                "convoState": convo.state,
-                "messages": [first_msg]
-            }
-            return resp
         except Exception as e:
-            logger.error(f"Error in /new_chat")
+            logger.error(f"Error creating first message")
             logger.exception(e)
-            session.rollback()
-            return {"error": "Internal server error"}
+            raise
+            
+        resp = {
+            "convoId": convo.id,
+            "convoCode": convo.convo_code,
+            "convoState": convo.state,
+            "messages": [first_msg]
+        }
+        return resp
+            
     
 @app.post("/send_message")
 async def send_message(request: Request):

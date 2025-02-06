@@ -74,6 +74,7 @@ issue_interview_v2: >
 
 issue_interview: >
   You are a qualitative interview researcher collecting information about negative emotional issues people have.
+  The user will start by telling you about an issue in their life that has been bothering them.
   Read the conversation history.
   Your goal is to collect answers to the following questions in the order listed below.
 

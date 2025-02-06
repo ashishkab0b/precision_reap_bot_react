@@ -25,6 +25,9 @@ from bot.config import CurrentConfig
 from bot.logger_setup import setup_logger
 from bot.reappraisal_generator import ReappraisalGenerator
 
+# TODO: NEED TO REFACTOR OUT THE COMMITS AND ROLLBACKS IF USING THIS
+raise NotImplementedError("need refactor")
+
 logger = setup_logger()
 
 # Load prompts and bot_msgs
@@ -98,11 +101,10 @@ class Chatbot:
                             llm_model=model
                         )
                         output["llm_query_id"] = llm_query.id
-                        session.commit()
                     except Exception as ex:
-                        session.rollback()
                         logger.error("Error saving LLM query.")
                         logger.exception(ex)
+                        raise
                 return output
             except Exception as e:
                 logger.error(f"Error calling OpenAI (attempt {attempt+1})")

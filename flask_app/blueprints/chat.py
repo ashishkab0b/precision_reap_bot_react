@@ -113,11 +113,23 @@ def get_conversation_route():
     
     # Get conversation object
     with get_session() as session:
-        convo = get_conversation_by_pid_code(session=session, pid=pid, convo_code=code)
+        try:
+            convo = get_conversation_by_pid_code(session=session, pid=pid, convo_code=code)
+        except Exception as e:
+            current_app.logger.error(f'Error getting conversation')
+            current_app.logger.exception(e)
+            raise
+        
         if not convo:
             current_app.logger.warning(f'No conversation found for pid: {pid} and code: {code}')
             return jsonify({'exists': False}), 200
-        messages = get_conversation_messages(session=session, convo_id=convo.id)
+        try:
+            messages = get_conversation_messages(session=session, convo_id=convo.id)
+        except Exception as e:
+            current_app.logger.error(f'Error getting messages for conversation')
+            current_app.logger.exception(e)
+            raise
+        
         messages_out = []
         for msg in messages:
             messages_out.append({

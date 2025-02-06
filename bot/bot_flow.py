@@ -97,11 +97,10 @@ class Chatbot:
                             llm_model=model
                         )
                         output["llm_query_id"] = llm_query.id
-                        session.commit()
                     except Exception as ex:
-                        session.rollback()
                         logger.error("Error saving LLM query.")
                         logger.exception(ex)
+                        raise
                 return output
             except Exception as e:
                 logger.error(f"Error calling OpenAI (attempt {attempt+1})")
@@ -218,11 +217,15 @@ class BotIssueInterview(BotStep):
             # Move to next state
             with self._get_session() as session:
                 # this is redundant with create_message() updating state
-                update_conversation(
-                    session=session, 
-                    conversation=get_conversation_by_id(session, self.convo_id),
-                    state=ConvoStateEnum.RATE_ISSUE)
-                session.commit()
+                try:
+                    update_conversation(
+                        session=session, 
+                        conversation=get_conversation_by_id(session, self.convo_id),
+                        state=ConvoStateEnum.RATE_ISSUE)
+                except Exception as e:
+                    logger.error(f"Error updating conversation state, convo_id={self.convo_id}")
+                    logger.exception(e)
+                    raise
             return (ConvoStateEnum.RATE_ISSUE, {})
         else:
             # Stay in ISSUE_INTERVIEW
@@ -283,11 +286,10 @@ class BotRateIssue(BotStep):
                     field=user_msg["options"].get("question_id"),
                     content=user_msg["content"]
                 )
-                session.commit()
             except Exception as e:
                 logger.error(f"Error saving rating, convo_id={self.convo_id}")
                 logger.exception(e)
-                session.rollback()
+                raise
 
     def next_state(self) -> Tuple[str, Dict]:
         """
@@ -300,12 +302,16 @@ class BotRateIssue(BotStep):
         if not missing_fields:
             # All rating questions are answered
             with self._get_session() as session:
-                # Update the conversation state
-                update_conversation(
-                    session=session, 
-                    conversation=get_conversation_by_id(session, self.convo_id),
-                    state=ConvoStateEnum.RATE_VALUES)
-                session.commit()
+                try:
+                    # Update the conversation state
+                    update_conversation(
+                        session=session, 
+                        conversation=get_conversation_by_id(session, self.convo_id),
+                        state=ConvoStateEnum.RATE_VALUES)
+                except Exception as e:
+                    logger.error(f"Error updating conversation state, convo_id={self.convo_id}")
+                    logger.exception(e)
+                    raise
             return (ConvoStateEnum.RATE_VALUES, {})  # proceed
         else:
             # Still have questions left
@@ -363,11 +369,10 @@ class BotRateValues(BotStep):
                     field=user_msg["options"].get("question_id"),
                     content=user_msg["content"]
                 )
-                session.commit()
             except Exception as e:
                 logger.error(f"Error saving rating, convo_id={self.convo_id}")
                 logger.exception(e)
-                session.rollback()
+                raise
                     
     def next_state(self) -> Tuple[str, Dict]:
         with self._get_session() as session:
@@ -376,12 +381,15 @@ class BotRateValues(BotStep):
         if not missing_fields:
             # All rating questions are answered
             with self._get_session() as session:
-                # Update the conversation state
-                update_conversation(
-                    session=session, 
-                    conversation=get_conversation_by_id(session, self.convo_id),
-                    state=ConvoStateEnum.RANK_REAPS)
-                session.commit()
+                try:
+                    update_conversation(
+                        session=session, 
+                        conversation=get_conversation_by_id(session, self.convo_id),
+                        state=ConvoStateEnum.RANK_REAPS)
+                except Exception as e:
+                    logger.error(f"Error updating conversation state, convo_id={self.convo_id}")
+                    logger.exception(e)
+                    raise
             return (ConvoStateEnum.RANK_REAPS, {"init": True})
         else:
             # Still have questions left
@@ -433,21 +441,19 @@ class BotRankReaps(BotStep):
         logger.debug(f"BotRankReaps.process_input: {user_msg}")
         if user_msg["content"] == "":
             return
+        ranking = user_msg.get("content", [])
         with self._get_session() as session:
             try:
-                ranking = user_msg.get("content", [])
-                # Save the user's ranking in analysis_data
                 create_analysis_data(
                     session=session,
                     convo_id=self.convo_id,
                     field="reap_ranks",
                     content=json.dumps(ranking)
                 )
-                session.commit()  # Make sure data is persisted
             except Exception as e:
                 logger.error(f"Error saving ranking, convo_id={self.convo_id}")
                 logger.exception(e)
-                session.rollback()
+                raise
                     
 
     def next_state(self) -> Tuple[str, Dict]:
@@ -479,47 +485,58 @@ class BotRankReaps(BotStep):
 
         with self._get_session() as session:
             try:
-                # 1) Fetch the user's top/bottom values from analysis_data (adjust fields as needed).
                 analysis_data = get_conversation_analysis_data(session, self.convo_id)
-                val_data = [x for x in analysis_data if x.field.startswith("rate_val_")]
-                # get the top 4 and bottom 4 values by the field "content"
-                top_vals = sorted(val_data, key=lambda x: x.content, reverse=True)[:4]
-                bottom_vals = sorted(val_data, key=lambda x: x.content)[:4]
-                top_val_names = [x.field.split("_")[-1] for x in top_vals]
-                bottom_val_names = [x.field.split("_")[-1] for x in bottom_vals]
-                logger.debug(f"Top values: {top_val_names}")
-                logger.debug(f"Bottom values: {bottom_val_names}")
+            except Exception as e:
+                logger.error(f"Error fetching analysis data, convo_id={self.convo_id}")
+                logger.exception(e)
+                raise
+            # 1) Fetch the user's top/bottom values from analysis_data (adjust fields as needed).
+            val_data = [x for x in analysis_data if x.field.startswith("rate_val_")]
+            # get the top 4 and bottom 4 values by the field "content"
+            top_vals = sorted(val_data, key=lambda x: x.content, reverse=True)[:4]
+            bottom_vals = sorted(val_data, key=lambda x: x.content)[:4]
+            top_val_names = [x.field.split("_")[-1] for x in top_vals]
+            bottom_val_names = [x.field.split("_")[-1] for x in bottom_vals]
+            logger.debug(f"Top values: {top_val_names}")
+            logger.debug(f"Bottom values: {bottom_val_names}")
                 
 
-                # 2) Prepare message history for the reappraisal generator
-                #    (just an example of user vs assistant messages).
+            # 2) Prepare message history for the reappraisal generator
+            #    (just an example of user vs assistant messages).
+            try:
                 convo_msgs = get_conversation_messages(session, self.convo_id)
-                msg_history = []
-                for m in convo_msgs:
-                    if m.state != ConvoStateEnum.ISSUE_INTERVIEW:
-                        continue
-                    if m.role == RoleEnum.USER:
-                        msg_history.append({"role": "user", "content": m.content})
-                    elif m.role == RoleEnum.ASSISTANT:
-                        msg_history.append({"role": "assistant", "content": m.content})
+            except Exception as e:
+                logger.error(f"Error fetching conversation messages, convo_id={self.convo_id}")
+                logger.exception(e)
+                raise
+            
+            msg_history = []
+            for m in convo_msgs:
+                if m.state != ConvoStateEnum.ISSUE_INTERVIEW:
+                    continue
+                if m.role == RoleEnum.USER:
+                    msg_history.append({"role": "user", "content": m.content})
+                elif m.role == RoleEnum.ASSISTANT:
+                    msg_history.append({"role": "assistant", "content": m.content})
 
-                # 3) Create and configure our ReappraisalGenerator.
-                #    If you have a list of all possible values, load them as `all_vals` here.
-                
-                reap_gen = ReappraisalGenerator(all_vals=val_list, convo_id=self.convo_id)
-                reap_gen.set_top_n_vals([v.lower() for v in top_val_names])
-                reap_gen.set_bottom_n_vals([v.lower() for v in bottom_val_names])
+            # 3) Create and configure our ReappraisalGenerator.
+            #    If you have a list of all possible values, load them as `all_vals` here.
+            
+            reap_gen = ReappraisalGenerator(all_vals=val_list, convo_id=self.convo_id)
+            reap_gen.set_top_n_vals([v.lower() for v in top_val_names])
+            reap_gen.set_bottom_n_vals([v.lower() for v in bottom_val_names])
 
-                # 4) Generate the reappraisals asynchronously
+            # 4) Generate the reappraisals asynchronously
+            
+            reap_dict = await reap_gen.generate_all_reappraisals(msg_history)  # {"reap_top": {...}, "reap_bottom": {...}, "reap_general": {...}}
+            # put in random order and record everything
+            # reap_keys = ["reap_top", "reap_bottom", "reap_general"]
+            reap_keys = ["reap_top1", "reap_top2", "reap_bottom1", "reap_bottom2"]
+            n_reaps = len(reap_keys)
+            idx_shuffled = random.sample(range(n_reaps), n_reaps)
+            reap_texts_shuffled = [reap_dict[reap_keys[idx]]['reap_text'] for idx in idx_shuffled]
                 
-                reap_dict = await reap_gen.generate_all_reappraisals(msg_history)  # {"reap_top": {...}, "reap_bottom": {...}, "reap_general": {...}}
-                # put in random order and record everything
-                # reap_keys = ["reap_top", "reap_bottom", "reap_general"]
-                reap_keys = ["reap_top1", "reap_top2", "reap_bottom1", "reap_bottom2"]
-                n_reaps = len(reap_keys)
-                idx_shuffled = random.sample(range(n_reaps), n_reaps)
-                reap_texts_shuffled = [reap_dict[reap_keys[idx]]['reap_text'] for idx in idx_shuffled]
-                
+            try:
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
                     field='reap_top1_idx', content=str(idx_shuffled[0]))
@@ -558,23 +575,19 @@ class BotRankReaps(BotStep):
                 create_analysis_data(
                     session=session, convo_id=self.convo_id,
                     field='reap_bottom2_value', content=reap_dict['reap_bottom2']['reap_type'])
-                
-                session.commit()
-                
-                logger.debug(f"Reappraisals: {reap_dict}")
-
-                bot_msg = {
-                    "content": bot_msgs["rank_reaps"]["content"],
-                    "responseType": ResponseTypeEnum.RANKING,
-                    "options": {"items": reap_texts_shuffled}
-                }
-                return bot_msg
-                
             except Exception as e:
-                logger.error(f"Error generating reappraisals, convo_id={self.convo_id}")
+                logger.error(f"Error saving reappraisals, convo_id={self.convo_id}")
                 logger.exception(e)
-                session.rollback()
-                return None
+                raise
+                
+            logger.debug(f"Reappraisals: {reap_dict}")
+
+            bot_msg = {
+                "content": bot_msgs["rank_reaps"]["content"],
+                "responseType": ResponseTypeEnum.RANKING,
+                "options": {"items": reap_texts_shuffled}
+            }
+            return bot_msg
 
 class BotRateReaps(BotStep):
     
@@ -599,28 +612,36 @@ class BotRateReaps(BotStep):
                     field=user_msg["options"].get("question_id"),
                     content=user_msg["content"]
                 )
-                session.commit()
             except Exception as e:
                 logger.error(f"Error saving rating, convo_id={self.convo_id}")
                 logger.exception(e)
-                session.rollback()
+                raise
     
     def next_state(self):
         """
         Move to the next state after the user has rated the reappraisals.
         """
         with self._get_session() as session:
-            data = get_conversation_analysis_data(session, self.convo_id)
+            try:
+                data = get_conversation_analysis_data(session, self.convo_id)
+            except Exception as e:
+                logger.error(f"Error fetching analysis data, convo_id={self.convo_id}")
+                logger.exception(e)
+                raise
+            
             missing_fields = self._missing_fields(data)
             if not missing_fields:
                 # All rating questions are answered
-                with self._get_session() as session:
+                try:
                     # Update the conversation state
                     update_conversation(
                         session=session, 
                         conversation=get_conversation_by_id(session, self.convo_id),
                         state=ConvoStateEnum.COMPLETE)
-                    session.commit()
+                except Exception as e:
+                    logger.error(f"Error updating conversation state, convo_id={self.convo_id}")
+                    logger.exception(e)
+                    raise
                 return (ConvoStateEnum.COMPLETE, {})  # proceed
             else:
                 # Still have questions left
@@ -691,7 +712,12 @@ class BotComplete(BotStep):
 # ------------------------------------------------------------------------------
 async def run_state_logic(convo_id: int, user_msg: Dict):
     with BotStep(0)._get_session() as session:
-        convo = get_conversation_by_id(session, convo_id)
+        try:
+            convo = get_conversation_by_id(session, convo_id)
+        except Exception as e:
+            logger.error(f"Error fetching conversation, convo_id={convo_id}")
+            logger.exception(e)
+            raise
         if not convo:
             return {"error": "Conversation not found."}
         current_state = convo.state
@@ -725,12 +751,11 @@ async def run_state_logic(convo_id: int, user_msg: Dict):
                 response_type=step_obj.user_msg["responseType"],
                 options=user_msg["options"]
             )
-            session.commit()
         # step_obj.user_msg["msgId"] = msg.id
         except Exception as e:
             logger.error(f"Error saving user message, convo_id={convo_id}")
             logger.exception(e)
-            session.rollback()
+            raise
 
     # 4) move to next state
     new_state, data = step_obj.next_state()
@@ -758,11 +783,10 @@ async def run_state_logic(convo_id: int, user_msg: Dict):
             )
             session.flush()
             bot_msg["msgId"] = msg.id
-            session.commit()
         except Exception as e:
             logger.error(f"Error saving bot message, convo_id={convo_id}")
             logger.exception(e)
-            session.rollback()
+            raise
 
     # 6) update conversation
     with step_obj._get_session() as session:
@@ -770,10 +794,9 @@ async def run_state_logic(convo_id: int, user_msg: Dict):
             convo = get_conversation_by_id(session, convo_id)
             if convo:
                 update_conversation(session, convo, state=new_state)
-                session.commit()
         except Exception as e:
             logger.error(f"Error updating conversation, convo_id={convo_id}")
             logger.exception(e)
-            session.rollback()
+            raise
             
     return bot_msg
