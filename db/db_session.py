@@ -17,12 +17,20 @@ logger = setup_logger()
 DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URI")
 
 # Create the engine and initialize the database
+# engine = create_engine(
+#     DATABASE_URL,
+#     pool_size=10,        # Maximum number of persistent connections
+#     max_overflow=5,      # Allow up to 5 additional temporary connections
+#     pool_recycle=1800,   # Close connections after 30 minutes (adjust if needed)
+#     pool_pre_ping=True   # Ensure connections are alive before using them
+# )
+
 engine = create_engine(
     DATABASE_URL,
-    pool_size=10,        # Maximum number of persistent connections
-    max_overflow=5,      # Allow up to 5 additional temporary connections
-    pool_recycle=1800,   # Close connections after 30 minutes (adjust if needed)
-    pool_pre_ping=True   # Ensure connections are alive before using them
+    pool_size=50,        
+    max_overflow=20,     
+    pool_recycle=1800,   
+    pool_pre_ping=True   
 )
 # Base.metadata.create_all(bind=engine)
 with engine.connect() as conn:
