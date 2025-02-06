@@ -59,7 +59,8 @@ class Chatbot:
 
         # Construct the final message array
         # if model contains "4o" then role is system, else developer
-        role = "system" if "4o" in model else "developer"
+        # role = "system" if "4o" in model else "developer"
+        role = "developer"
         full_messages = [{"role": role, "content": system_prompt}] + messages 
         logger.debug(f"Calling OpenAI with {len(messages)} messages and system prompt: {system_prompt}")
         # logger.debug(f"Calling OpenAI with system prompt: {system_prompt}")
