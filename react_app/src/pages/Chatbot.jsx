@@ -197,7 +197,7 @@ const Chatbot = () => {
         alignItems: "stretch",
         width: "100%",
         height: "100vh",
-        overflow: "hidden", // or "auto", if needed
+        overflow: "auto", // or "auto", if needed
       }}
     >
       {/* Outer container to cap max width */}

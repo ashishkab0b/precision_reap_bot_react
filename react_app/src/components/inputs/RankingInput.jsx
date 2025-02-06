@@ -98,6 +98,8 @@ const RankingInput = ({
               border: "1px solid #ccc", // Border around each item.
               mb: 1,
               borderRadius: 1,
+              // maxHeight: "50vh",
+              // overflowY: "auto",
             }}
             secondaryAction={
               <Box sx={{ display: "flex", flexDirection: "column" }}>
