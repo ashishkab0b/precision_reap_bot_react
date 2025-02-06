@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 
-ROOT_DIR="/Users/ashish/files/research/projects/alexithymia/xsect_affForecast_spr22"
-DATA_DIR="${ROOT_DIR}/data/"
+ROOT_DIR="/Users/ashish/files/research/projects/vbr/precision_reap_bot_react_study"
+DATA_DIR="${ROOT_DIR}/analysis/data/"
 TIMESTAMP=`date +%Y-%m-%d_%H-%M-%S`
 DATESTAMP=`date +%Y-%m-%d`
 RAW_DIR="${DATA_DIR}/raw/${DATESTAMP}"
 
 mkdir ${RAW_DIR}
 
-~/files/scripts/qualtrics_module.py responses SV_XXXXXXXXX --output_dir ${RAW_DIR}
+~/files/scripts/qualtrics_module.py responses SV_d4r2Zn8Nv4uICYm --output_dir ${RAW_DIR}
 
 
 # ROOT_DIR="/Users/ashish/files/research/data/<path>"

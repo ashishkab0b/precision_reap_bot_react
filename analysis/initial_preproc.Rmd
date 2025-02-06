@@ -31,9 +31,53 @@ Preprocessing
 Read data
 ---
 ```{r}
-filepath <- sprintf("%s/...csv", recent_date_dir(here("data/raw")))
-df_file <- read_survey(here(filepath))
+# filepath <- sprintf("%s/...csv", recent_date_dir(here("data/raw")))
+# df_file <- read_survey(here(filepath))
+
+df_qualtrics_file <- read_csv(here("data/qualtrics.csv"))
+df_conversations_file <- read_csv(here("analysis/conversations.csv"))
+df_analysis_data_file <- read_csv(here("analysis/analysis_data.csv"))
+df_messages_file <- read_csv(here("analysis/messages.csv"))
+df_llm_queries_file <- read_csv(here("analysis/llm_queries.csv"))
+
 ```
+
+```{r}
+df_conversations <- df_conversations_file %>% 
+  filter(!str_detect(pid, "test")) %>% 
+  rename(convo_id = id)
+
+df_analysis_data <- df_analysis_data_file %>% 
+  filter(convo_id %in% df_conversations$convo_id) 
+  
+```
+
+```{r}
+df_analysis_data %>% 
+  filter(str_detect(field, "rate_reap_success")) %>% 
+  mutate(category = str_extract(field, "top|bottom")) %>% 
+  mutate(value = as.numeric(content)) %>% 
+  ggplot(aes(x = category, y = value)) +
+  stat_summary()
+  
+df_analysis_data %>% 
+  filter(str_detect(field, "rate_reap_insight")) %>% 
+  mutate(category = str_extract(field, "top|bottom")) %>% 
+  mutate(value = as.numeric(content)) %>% 
+  ggplot(aes(x = category, y = value)) +
+  stat_summary()
+  
+df_analysis_data %>% 
+  filter(str_detect(field, "rate_reap_care")) %>% 
+  mutate(category = str_extract(field, "top|bottom")) %>% 
+  mutate(value = as.numeric(content)) %>% 
+  ggplot(aes(x = category, y = value)) +
+  stat_summary()
+  
+  
+```
+
+
 
 Make blank codebook
 ---
