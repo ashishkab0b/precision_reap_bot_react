@@ -211,7 +211,7 @@ class BotIssueInterview(BotStep):
         
         msg_string = Chatbot.stringify_messages(convo_msgs)
         system_prompt_str = prompts["issue_interview"].format(history=msg_string)
-        msgs = [{"role": "developer", "content": system_prompt_str}]
+        msgs = [{"role": "system", "content": system_prompt_str}]
         gpt_query_output = Chatbot.query_gpt(messages=msgs, convo_id=self.convo_id)  # {"content": "...", "token_prompt": 123, "token_completion": 456}
         gpt_response = gpt_query_output["content"]
         finished = "::finished::" in gpt_response
