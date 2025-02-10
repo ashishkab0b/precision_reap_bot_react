@@ -261,12 +261,14 @@ class BotIssueInterview(BotStep):
         with self._get_session() as session:
             msgs = get_conversation_messages(session, self.convo_id)
             # Convert to OpenAI's format: [{"role": "user", "content": "..."}]
-            msgs[0]['content'] = "Please tell me about an issue in your life."  # shorten the initial message to user
             result = []
-            for m in msgs:
+            for i, m in enumerate(msgs):
+                the_message = {"role": m.role.value, "content": m.content}
+                if i == 0:
+                    the_message["content"] = "Please tell me about an issue in your life."
                 # We'll only feed user/assistant messages to GPT
                 if m.role == RoleEnum.USER or m.role == RoleEnum.ASSISTANT:
-                    result.append({"role": m.role.value, "content": m.content})
+                    result.append(the_message)
         return result
 
 
