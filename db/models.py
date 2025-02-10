@@ -154,6 +154,7 @@ class LLMQuery(Base):
     
     # Data
     completion: Mapped[JSONB] = mapped_column(JSONB, nullable=False)
+    prompt_messages: Mapped[JSONB] = mapped_column(JSONB, nullable=True) 
     tokens_prompt: Mapped[int] = mapped_column(Integer, nullable=True)
     tokens_completion: Mapped[int] = mapped_column(Integer, nullable=True)
     llm_model: Mapped[str] = mapped_column(String, nullable=True)

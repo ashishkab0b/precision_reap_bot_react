@@ -90,9 +90,10 @@ class ReappraisalGenerator:
             }
         else:
             role = "developer"
+        full_messages = msg_history + [{"role": role, "content": prompt}]
         payload = {
             "model": self.reap_model,
-            "messages": msg_history + [{"role": role, "content": prompt}]
+            "messages": full_messages,
         }
         payload.update(params)
         # logger.debug(f'value reap prompt: {prompt}')
@@ -122,6 +123,7 @@ class ReappraisalGenerator:
                         tokens_prompt=data["usage"]["prompt_tokens"],
                         tokens_completion=data["usage"]["completion_tokens"],
                         llm_model=self.reap_model,
+                        prompt_messages=full_messages
                     )
                 except Exception as e:
                     logger.error(f"Error in saving generated reappraisals")
@@ -167,9 +169,10 @@ class ReappraisalGenerator:
             role = "developer"
         else:
             role = "developer"
+        full_messages = msg_history + [{"role": role, "content": prompt}],
         payload = {
             "model": self.judge_model,
-            "messages": msg_history + [{"role": role, "content": prompt}],
+            "messages": full_messages,
             "reasoning_effort": "medium",
             "response_format": {
             "type": "json_schema",
@@ -210,6 +213,7 @@ class ReappraisalGenerator:
                         tokens_prompt=data["usage"]["prompt_tokens"],
                         tokens_completion=data["usage"]["completion_tokens"],
                         llm_model=self.judge_model,
+                        prompt_messages=full_messages
                     )
                 except Exception as e:
                     logger.error(f"Error in _select_reappraisal")
