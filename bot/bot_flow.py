@@ -261,6 +261,7 @@ class BotIssueInterview(BotStep):
         with self._get_session() as session:
             msgs = get_conversation_messages(session, self.convo_id)
             # Convert to OpenAI's format: [{"role": "user", "content": "..."}]
+            msgs[0]['content'] = "Please tell me about an issue in your life."  # shorten the initial message to user
             result = []
             for m in msgs:
                 # We'll only feed user/assistant messages to GPT
