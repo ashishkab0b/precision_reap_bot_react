@@ -102,7 +102,8 @@ issue_interview: >
 
   Once you have asked every question, in your final response to the user, end the message with the word "::finished::" including the colons, but not the quotation marks
   In this final response, do not mention anything about the conversation ending or provide any closing remarks. 
-  Just tell them we'll now move to the next phase when they're ready. Make sure you speak in a conversational and empathetic style throughout.
+  Just tell them we'll now move to the next phase when they're ready. 
+  Make sure you speak in a conversational and empathetic style throughout. Not like a therapist, but just a kind interviewer.
 
   <conversation_history>
   {history}
