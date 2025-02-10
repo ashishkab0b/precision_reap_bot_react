@@ -493,8 +493,8 @@ class BotRankReaps(BotStep):
             # 1) Fetch the user's top/bottom values from analysis_data (adjust fields as needed).
             val_data = [x for x in analysis_data if x.field.startswith("rate_val_")]
             # get the top 4 and bottom 4 values by the field "content"
-            top_vals = sorted(val_data, key=lambda x: x.content, reverse=True)[:4]
-            bottom_vals = sorted(val_data, key=lambda x: x.content)[:4]
+            top_vals = sorted(val_data, key=lambda x: int(x.content), reverse=True)[:4]
+            bottom_vals = sorted(val_data, key=lambda x: int(x.content))[:4]
             top_val_names = [x.field.split("_")[-1] for x in top_vals]
             bottom_val_names = [x.field.split("_")[-1] for x in bottom_vals]
             logger.debug(f"Top values: {top_val_names}")
