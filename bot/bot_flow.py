@@ -45,8 +45,7 @@ class Chatbot:
     A small utility to query OpenAI with a 'system' prompt + conversation history.
     """
     @staticmethod
-    def query_gpt(system_prompt: str,
-                  messages: List[Dict[str, str]],
+    def query_gpt(messages: List[Dict[str, str]],
                   convo_id: Optional[int],
                   message_id: Optional[int] = None,
                   max_tries: int = 3) -> str:
@@ -60,9 +59,9 @@ class Chatbot:
         # Construct the final message array
         # if model contains "4o" then role is system, else developer
         # role = "system" if "4o" in model else "developer"
-        role = "developer"
-        full_messages = [{"role": role, "content": system_prompt}] + messages 
-        logger.debug(f"Calling OpenAI with {len(messages)} messages and system prompt: {system_prompt}")
+        # role = "developer"
+        # full_messages = [{"role": role, "content": system_prompt}] + messages 
+        # logger.debug(f"Calling OpenAI with {len(messages)} messages and system prompt: {system_prompt}")
         # logger.debug(f"Calling OpenAI with system prompt: {system_prompt}")
         # logger.debug(f"Messages: {messages}")
         for attempt in range(max_tries):
@@ -71,7 +70,7 @@ class Chatbot:
                 completion = openai.chat.completions.create(
                     model=model,
                     temperature=temperature,
-                    messages=full_messages,
+                    messages=messages,
                 )
                 logger.debug(f"OpenAI response: {completion.choices[0].message.content}")
                 gpt_output = completion.choices[0].message.content
@@ -95,7 +94,8 @@ class Chatbot:
                             completion=completion_dict,
                             tokens_prompt=tokens_prompt,
                             tokens_completion=tokens_completion,
-                            llm_model=model
+                            llm_model=model,
+                            prompt_messages=messages
                         )
                         output["llm_query_id"] = llm_query.id
                     except Exception as ex:
@@ -109,6 +109,13 @@ class Chatbot:
         
         logger.error("Max retries reached for query_gpt. Returning empty string.")
         return {"content": "", "tokens_prompt": 0, "tokens_completion": 0}
+    
+    @staticmethod
+    def stringify_messages(messages: List[Dict[str, str]]) -> str:
+        """
+        Convert a list of messages to a single string.
+        """
+        return "\n".join([f"{m['role']}: {m['content']}" for m in messages])
 
 
 class BotStep:
@@ -202,8 +209,10 @@ class BotIssueInterview(BotStep):
         # 1) Gather conversation messages relevant to the "issue_interview" state
         convo_msgs = self._gather_relevant_messages()
         
-        system_prompt = prompts["issue_interview"]
-        gpt_query_output = Chatbot.query_gpt(system_prompt, convo_msgs, convo_id=self.convo_id)  # {"content": "...", "token_prompt": 123, "token_completion": 456}
+        msg_string = Chatbot.stringify_messages(convo_msgs)
+        system_prompt_str = prompts["issue_interview"].format(history=msg_string)
+        msgs = [{"role": "developer", "content": system_prompt_str}]
+        gpt_query_output = Chatbot.query_gpt(messages=msgs, convo_id=self.convo_id)  # {"content": "...", "token_prompt": 123, "token_completion": 456}
         gpt_response = gpt_query_output["content"]
         finished = "::finished::" in gpt_response
         gpt_clean = gpt_response.replace("::finished::", "")
