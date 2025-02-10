@@ -191,7 +191,7 @@ def get_conversation_messages(
     Returns:
         List[Message]: A list of Message objects.
     """
-    stmt = select(Message).where(Message.convo_id == convo_id)
+    stmt = select(Message).where(Message.convo_id == convo_id).order_by(Message.created_at)
     stmt = include_deleted_records(stmt, Message, include_deleted)
     result = session.execute(stmt)
     return result.scalars().all()
