@@ -333,7 +333,7 @@ def update_analyis_data(session: Session, data: AnalysisData, **kwargs) -> Analy
 
 # ======================= LLM QUERIES =======================
 
-def create_llm_query(session: Session, convo_id: int, completion: Dict, message_id: int=None, **kwargs) -> LLMQuery:
+def create_llm_query(session: Session, convo_id: int, completion: Dict, message_id: int=None, prompt_messages=None, **kwargs) -> LLMQuery:
     """
     Create a new row in the llm_queries table.
     """
@@ -341,6 +341,7 @@ def create_llm_query(session: Session, convo_id: int, completion: Dict, message_
         convo_id=convo_id,
         message_id=message_id,
         completion=completion,
+        prompt_messages=prompt_messages,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         deleted_at=None,
