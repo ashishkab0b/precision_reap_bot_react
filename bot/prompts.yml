@@ -103,6 +103,10 @@ issue_interview: >
   In this final response, do not mention anything about the conversation ending or provide any closing remarks. 
   Just tell them we'll now move to the next phase when they're ready.
 
+  <conversation_history>
+  {history}
+  </conversation_history>
+
 
 
 issue_interview_tester: >
