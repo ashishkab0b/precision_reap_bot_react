@@ -90,9 +90,10 @@ class ReappraisalGenerator:
             }
         else:
             role = "developer"
+        full_messages = msg_history + [{"role": role, "content": prompt}]
         payload = {
             "model": self.reap_model,
-            "messages": msg_history + [{"role": role, "content": prompt}]
+            "messages": full_messages,
         }
         payload.update(params)
         # logger.debug(f'value reap prompt: {prompt}')
@@ -122,6 +123,7 @@ class ReappraisalGenerator:
                         tokens_prompt=data["usage"]["prompt_tokens"],
                         tokens_completion=data["usage"]["completion_tokens"],
                         llm_model=self.reap_model,
+                        prompt_messages=full_messages
                     )
                 except Exception as e:
                     logger.error(f"Error in saving generated reappraisals")
@@ -161,15 +163,17 @@ class ReappraisalGenerator:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_token}"
         }
-        if self.judge_model in ["gpt-4o", "gpt-4o-mini"]:
-            role = "system"
-        elif self.judge_model in ["o1", "o3-mini"]:
-            role = "developer"
-        else:
-            role = "developer"
+        # if self.judge_model in ["gpt-4o", "gpt-4o-mini"]:
+        #     role = "system"
+        # elif self.judge_model in ["o1", "o3-mini"]:
+        #     role = "developer"
+        # else:
+        #     role = "developer"
+        role = "developer"
+        full_messages = msg_history + [{"role": role, "content": prompt}],
         payload = {
             "model": self.judge_model,
-            "messages": msg_history + [{"role": role, "content": prompt}],
+            "messages": full_messages,
             "reasoning_effort": "medium",
             "response_format": {
             "type": "json_schema",
@@ -194,9 +198,9 @@ class ReappraisalGenerator:
                 "strict": True
             }
             }
-            
         }
         url = "https://api.openai.com/v1/chat/completions"
+        logger.debug(f'payload: {payload}')
         async with sess.post(url, headers=headers, json=payload) as resp:
             resp.raise_for_status()
             data = await resp.json()
@@ -210,6 +214,7 @@ class ReappraisalGenerator:
                         tokens_prompt=data["usage"]["prompt_tokens"],
                         tokens_completion=data["usage"]["completion_tokens"],
                         llm_model=self.judge_model,
+                        prompt_messages=full_messages
                     )
                 except Exception as e:
                     logger.error(f"Error in _select_reappraisal")

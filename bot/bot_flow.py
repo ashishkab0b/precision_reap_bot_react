@@ -53,23 +53,23 @@ class Chatbot:
         Query GPT with the system prompt + any additional messages.
         Returns the text or an empty string if it fails.
         """
-        model = CurrentConfig.openai_chat_model
-        temperature = CurrentConfig.openai_temperature
 
         # Construct the final message array
         # if model contains "4o" then role is system, else developer
         # role = "system" if "4o" in model else "developer"
         # role = "developer"
-        # full_messages = [{"role": role, "content": system_prompt}] + messages 
+        # full_messages = messages + [{"role": role, "content": system_prompt}] 
         # logger.debug(f"Calling OpenAI with {len(messages)} messages and system prompt: {system_prompt}")
         # logger.debug(f"Calling OpenAI with system prompt: {system_prompt}")
         # logger.debug(f"Messages: {messages}")
+        model = "o3-mini"
         for attempt in range(max_tries):
             try:
                 # Query GPT
                 completion = openai.chat.completions.create(
                     model=model,
-                    temperature=temperature,
+                    # temperature=temperature,
+                    reasoning_effort="low",
                     messages=messages,
                 )
                 logger.debug(f"OpenAI response: {completion.choices[0].message.content}")
@@ -209,9 +209,10 @@ class BotIssueInterview(BotStep):
         # 1) Gather conversation messages relevant to the "issue_interview" state
         convo_msgs = self._gather_relevant_messages()
         
-        msg_string = Chatbot.stringify_messages(convo_msgs)
-        system_prompt_str = prompts["issue_interview"].format(history=msg_string)
-        msgs = [{"role": "system", "content": system_prompt_str}]
+        # msg_string = Chatbot.stringify_messages(convo_msgs)
+        # system_prompt_str = prompts["issue_interview"].format(history=msg_string)
+        system_prompt_str = prompts["issue_interview"]
+        msgs = convo_msgs + [{"role": "system", "content": system_prompt_str}]
         gpt_query_output = Chatbot.query_gpt(messages=msgs, convo_id=self.convo_id)  # {"content": "...", "token_prompt": 123, "token_completion": 456}
         gpt_response = gpt_query_output["content"]
         finished = "::finished::" in gpt_response
@@ -264,8 +265,8 @@ class BotIssueInterview(BotStep):
             result = []
             for i, m in enumerate(msgs):
                 the_message = {"role": m.role.value, "content": m.content}
-                if i == 0:
-                    the_message["content"] = "Please tell me about an issue in your life."
+                # if i == 0:
+                #     the_message["content"] = "Please tell me about an issue in your life."
                 # We'll only feed user/assistant messages to GPT
                 if m.role == RoleEnum.USER or m.role == RoleEnum.ASSISTANT:
                     result.append(the_message)
