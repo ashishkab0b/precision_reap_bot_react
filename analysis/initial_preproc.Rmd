@@ -21,6 +21,8 @@ library(qualtRics)
 library(here)
 library(tidyverse)
 library(tidylog)
+library(lmerTest)
+library(sjPlot)
 theme_set(theme_bw())
 ```
 
@@ -31,10 +33,10 @@ Preprocessing
 Read data
 ---
 ```{r}
-# filepath <- sprintf("%s/...csv", recent_date_dir(here("data/raw")))
-# df_file <- read_survey(here(filepath))
+filepath <- sprintf("%s/precision_reap_bot_react_feb2025.csv", recent_date_dir(here("analysis/data/raw")))
+df_qualtrics_file <- read_survey(here(filepath))
 
-df_qualtrics_file <- read_csv(here("data/qualtrics.csv"))
+
 df_conversations_file <- read_csv(here("analysis/conversations.csv"))
 df_analysis_data_file <- read_csv(here("analysis/analysis_data.csv"))
 df_messages_file <- read_csv(here("analysis/messages.csv"))
@@ -43,106 +45,137 @@ df_llm_queries_file <- read_csv(here("analysis/llm_queries.csv"))
 ```
 
 ```{r}
+# remove_convo_ids <- c(
+#   207,
+#   210
+# )
+```
+
+
+```{r}
+
+df_qualtrics <- df_qualtrics_file %>% 
+  filter(use_survey == "Yes") %>% 
+  filter(use_survey_values == "Yes") %>% 
+  filter(use_survey_issue == "Yes") %>% 
+  rename(
+    ai_general = Q22_1,
+    ai_emo = Q23_1,
+    secret_word = Q4,
+    bot_enjoy = bot_enjoy_1,
+    bot_reuse = bot_reuse_1,
+    bot_helpful = bot_helpful_1,
+  ) %>% 
+  filter(!duplicated(pid))
+
+df_qualtrics %>%
+  filter(pid %in% (df_qualtrics %>%
+                    group_by(pid) %>%
+                    filter(n() > 1) %>%
+                    summarize(n = n()) %>%
+                    filter(n > 1) %>%
+                    pull(pid)
+           )) %>%
+  view
+  
+  
 df_conversations <- df_conversations_file %>% 
   filter(!str_detect(pid, "test")) %>% 
-  rename(convo_id = id)
+  filter(pid %in% df_qualtrics_file$pid) %>%
+  rename(convo_id = id) %>% 
+  filter(state == "COMPLETE") %>% 
+  arrange(ymd_hms(created_at)) %>%
+  filter(!duplicated(pid))
 
-df_analysis_data <- df_analysis_data_file %>% 
-  filter(convo_id %in% df_conversations$convo_id) 
-  
-```
+df_messages <- df_messages_file %>% 
+  filter(convo_id %in% df_conversations$convo_id) %>% 
+  left_join(df_conversations %>% select(convo_id, pid)) 
 
-```{r}
-df_analysis_data %>% 
-  filter(str_detect(field, "rate_reap_success")) %>% 
-  mutate(category = str_extract(field, "top|bottom")) %>% 
-  mutate(value = as.numeric(content)) %>% 
-  ggplot(aes(x = category, y = value)) +
-  stat_summary()
-  
-df_analysis_data %>% 
-  filter(str_detect(field, "rate_reap_insight")) %>% 
-  mutate(category = str_extract(field, "top|bottom")) %>% 
-  mutate(value = as.numeric(content)) %>% 
-  ggplot(aes(x = category, y = value)) +
-  stat_summary()
-  
-df_analysis_data %>% 
-  filter(str_detect(field, "rate_reap_care")) %>% 
-  mutate(category = str_extract(field, "top|bottom")) %>% 
-  mutate(value = as.numeric(content)) %>% 
-  ggplot(aes(x = category, y = value)) +
-  stat_summary()
-  
-  
-```
+df_conversations %>% nrow
 
+df_analysis <- df_analysis_data_file %>% 
+  mutate_at(vars(created_at, updated_at), ymd_hms) %>%
+  # keep participants i kept in convo df
+  filter(convo_id %in% df_conversations$convo_id) %>% 
+  # replace erroneous NAs with 0
+  mutate(content = ifelse(str_detect(field, "rate_") & is.na(content), "0", content)) %>% 
+  # remove duplicate rows
+  group_by(convo_id, field) %>%
+  arrange(created_at) %>% 
+  slice(1) %>%
+  ungroup() %>% 
+  # add pid
+  left_join(df_conversations %>% select(convo_id, pid)) 
 
-
-Make blank codebook
----
-```{r}
-codebook_filepath <- ""
-codebook_vars_blank <- tibble(old_col_name = names(df_file),
-                              new_col_name = "")
-codebook_values_blank <- tibble(var_regex = "",
-                                old_value = "",
-                                new_value = "")
-writexl::write_xlsx(list(variables = codebook_vars_blank,
-                         values = codebook_values_blank),
-                    here(codebook_filepath))
-
-```
-
-
-
-Read codebooks
----
-```{r}
-codebook_vars <- readxl::read_excel(here(codebook_filepath), sheet="variables")
-codebook_values <- readxl::read_excel(here(codebook_filepath), sheet="values")
-```
-
-Process data
----
-```{r}
-df_raw <- df_file %>% 
-  # -- remove qualtrics erroneous header -- #
-  # slice(-1) %>% 
-  # -- remove useless columns -- #
-  select(-IPAddress, -RecipientFirstName, -RecipientLastName, -RecipientEmail,
-         -ExternalReference, -LocationLatitude, -LocationLongitude,
-         -DistributionChannel, -UserLanguage) %>% 
-  rename(duration = `Duration (in seconds)`) %>% 
-  # -- add raw data file name -- #
-  mutate(rawDataFile = filepath) %>% 
-  # -- drop columns with all NA -- #
-  select(-where(~all(is.na(.)))) %>% 
-  # -- rename columns -- #
-  codebook_renamer(names_from=codebook_vars$old_col_name,
-                   names_to=codebook_vars$new_col_name)
-```
-
-```{r}
-df_recoded <- df_raw %>% 
-	# -- recode variables -- #
-	codebook_recoder(var_regex=codebook_values$var_regex,
-	                 values_from=codebook_values$old_value,
-	                 values_to=codebook_values$new_value)
-```
-
-
-```{r}
-df_proc <- df_recoded %>% 
-  # -- remove columns with all NA -- #
-  select_if(~!all(is.na(.)))
-
-
-# -- Check for duplicates -- #
-df_proc %>% 
+df_analysis %>% 
   group_by(pid) %>% 
-  summarize(n = n()) %>%
-  arrange(desc(n)) 
+  summarize(n = n()) %>% 
+  arrange(desc(n))
+  
+  
+df_analysis_w <- df_analysis %>% 
+  select(convo_id, field, content) %>% 
+  pivot_wider(names_from = field, values_from = content) %>% 
+  mutate(reap_ranks_og = reap_ranks) %>% 
+  mutate(reap_ranks = str_replace_all(reap_ranks, "\\[|\\]|\"| ", "")) %>% 
+  # separate reap ranks by comma into place1_idx, place2_idx, place3_idx, place4_idx
+  separate_wider_delim(reap_ranks, 
+                       delim = ",", 
+                       names = c("place1_idx", "place2_idx", "place3_idx", "place4_idx"),
+                       too_few = "debug"
+                       ) %>% 
+  filter(as.numeric(place1_idx) <= 4) %>% 
+  filter(as.numeric(place2_idx) <= 4) %>% 
+  filter(as.numeric(place3_idx) <= 4) %>% 
+  filter(as.numeric(place4_idx) <= 4) %>% 
+  mutate(
+    top1_rank = case_when(
+      reap_top1_idx == place1_idx ~ 1,
+      reap_top1_idx == place2_idx ~ 2,
+      reap_top1_idx == place3_idx ~ 3,
+      reap_top1_idx == place4_idx ~ 4
+    ),
+    top2_rank = case_when(
+      reap_top2_idx == place1_idx ~ 1,
+      reap_top2_idx == place2_idx ~ 2,
+      reap_top2_idx == place3_idx ~ 3,
+      reap_top2_idx == place4_idx ~ 4
+    ),
+    bottom1_rank = case_when(
+      reap_bottom1_idx == place1_idx ~ 1,
+      reap_bottom1_idx == place2_idx ~ 2,
+      reap_bottom1_idx == place3_idx ~ 3,
+      reap_bottom1_idx == place4_idx ~ 4
+    ),
+    bottom2_rank = case_when(
+      reap_bottom2_idx == place1_idx ~ 1,
+      reap_bottom2_idx == place2_idx ~ 2,
+      reap_bottom2_idx == place3_idx ~ 3,
+      reap_bottom2_idx == place4_idx ~ 4
+    ),
+  ) %>% 
+  mutate_at(vars(rate_issue_pos, rate_issue_neg), as.numeric) 
+df_ranks <- df_analysis_w %>% 
+  select(convo_id, top1_rank, top2_rank, bottom1_rank, bottom2_rank) %>% 
+  pivot_longer(cols = c(top1_rank, top2_rank, bottom1_rank, bottom2_rank), 
+               names_to = "reap_type", 
+               names_pattern = "(top|bottom).*",
+               values_to = "rank") 
+
+
+```
+
+Export
+===
+
+```{r}
+write_csv(df_qualtrics, here("analysis/data/proc/df_qualtrics.csv"))
+write_csv(df_conversations, here("analysis/data/proc/df_conversations.csv"))
+write_csv(df_analysis, here("analysis/data/proc/df_analysis.csv"))
+write_csv(df_analysis_w, here("analysis/data/proc/df_analysis_w.csv"))
+write_csv(df_ranks, here("analysis/data/proc/df_ranks.csv"))
+write_csv(df_messages, here("analysis/data/proc/df_messages.csv"))
+
 ```
 
 
@@ -150,15 +183,6 @@ df_proc %>%
 # ------ End Preprocessing ------ #
 # ----- Run all chunks above -----#
 ```
-
-Export
-===
-```{r}
-filepath_output <- paste0("data/proc/", Sys.Date(), "/_proc.csv")
-df_proc %>% 
-  write_csv(here(filepath_output))
-```
-
 
 
 

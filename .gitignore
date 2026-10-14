@@ -64,3 +64,34 @@ playground.ipynb
 
 notes.md
 .Rproj.user
+
+# Keep runtime secrets, study data, and model artifacts outside Git backups.
+**/.env*
+nginx/certs/
+certbot/
+outputs/
+.RData
+.Rhistory
+*.rds
+*.RDS
+*.rda
+*.Rda
+*.RData
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.sql
+*.dump
+*.zip
+analysis/data/
+analysis/models/
+analysis/plots/
+plots/

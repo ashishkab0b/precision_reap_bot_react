@@ -10,6 +10,11 @@ RAW_DIR="${DATA_DIR}/raw/${DATESTAMP}"
 mkdir ${RAW_DIR}
 
 ~/files/scripts/qualtrics_module.py responses SV_d4r2Zn8Nv4uICYm --output_dir ${RAW_DIR}
+# ~/files/scripts/qualtrics_module.py responses SV_4Z2VEBiFzlPzSsu --output_dir ${RAW_DIR}  # attitudes
+
+${ROOT_DIR}/venv/bin/python ${ROOT_DIR}/analysis/export_sql.py
+
+
 
 
 # ROOT_DIR="/Users/ashish/files/research/data/<path>"

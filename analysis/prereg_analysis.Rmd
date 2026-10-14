@@ -1,0 +1,1564 @@
+---
+title: "prereg_analysis"
+author: "Ashish"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: paper
+---
+
+Initialization
+===
+```{r}
+rm(list=ls())
+```
+
+```{r, message=FALSE}
+# devtools::install_github("amehtaSF/rsurveyutils")
+library(rsurveyutils)
+library(qualtRics)
+library(here)
+library(HDInterval)
+library(tidyverse)
+library(tidylog)
+library(lmerTest)
+library(tidybayes)
+library(modelr)
+library(emmeans)
+library(sjPlot)
+theme_set(theme_bw())
+```
+
+
+Read data
+===
+```{r}
+df_qualtrics <- read_csv(here("analysis/data/proc/df_qualtrics.csv"))
+df_analysis <- read_csv(here("analysis/data/proc/df_analysis.csv"))
+df_ranks <- read_csv(here("analysis/data/proc/df_ranks.csv"))
+df_analysis_w <- read_csv(here("analysis/data/proc/df_analysis_w.csv"))
+df_conversations <- read_csv(here("analysis/data/proc/df_conversations.csv"))
+df_messages <- read_csv(here("analysis/data/proc/df_messages.csv"))
+```
+
+
+Process data
+===
+```{r}
+df_vals <- df_analysis %>% 
+  filter(str_detect(field, "rate_val")) %>% 
+  mutate(val_name = str_remove(field, "rate_val_")) %>% 
+  select(convo_id, val_name, content) %>%
+  rename(val_rating = content) 
+df_vals_person <- df_vals %>% 
+  group_by(convo_id) %>%
+  summarize(mean_val = mean(as.numeric(val_rating), na.rm=T)) %>% 
+  ungroup
+```
+
+
+```{r}
+d_top1 <- df_analysis_w %>% 
+  select(convo_id, matches("top1"), 
+         -contains("_step"), 
+         -contains("_idx"),
+         -contains("_text")) %>% 
+  mutate(reap_category = "top",
+         reap_num = "top1") %>% 
+  rename_all(~str_remove(., "rate_")) %>% 
+  rename_all(~str_remove(., "_?top1")) %>% 
+  rename_all(~str_replace_all(., "_rank", "reap_rank"))
+d_top2 <- df_analysis_w %>% 
+  select(convo_id, matches("top2"), 
+         -contains("_step"), 
+         -contains("_idx"),
+         -contains("_text")) %>% 
+  mutate(reap_category = "top",
+         reap_num = "top2") %>% 
+  rename_all(~str_remove(., "rate_")) %>% 
+  rename_all(~str_remove(., "_?top2")) %>% 
+  rename_all(~str_replace_all(., "_rank", "reap_rank"))
+d_bottom1 <- df_analysis_w %>% 
+  select(convo_id, matches("bottom1"), 
+         -contains("_step"), 
+         -contains("_idx"),
+         -contains("_text")) %>% 
+  mutate(reap_category = "bottom",
+         reap_num = "bottom1") %>% 
+  rename_all(~str_remove(., "rate_")) %>% 
+  rename_all(~str_remove(., "_?bottom1")) %>% 
+  rename_all(~str_replace_all(., "_rank", "reap_rank"))
+d_bottom2 <- df_analysis_w %>% 
+  select(convo_id, matches("bottom2"), 
+         -contains("_step"), 
+         -contains("_idx"),
+         -contains("_text")) %>% 
+  mutate(reap_category = "bottom",
+         reap_num = "bottom2") %>% 
+  rename_all(~str_remove(., "rate_")) %>% 
+  rename_all(~str_remove(., "_?bottom2")) %>% 
+  rename_all(~str_replace_all(., "_rank", "reap_rank"))
+
+
+df_proc <- bind_rows(d_top1, d_top2, d_bottom1, d_bottom2) %>%
+  inner_join(df_analysis %>%
+              filter(str_detect(field, "rate_issue_pos")) %>%
+              select(convo_id, content) %>%
+              rename(issue_pos = content) %>%
+              mutate(issue_pos = as.numeric(issue_pos))) %>%
+  inner_join(df_analysis %>%
+              filter(str_detect(field, "rate_issue_neg")) %>%
+              select(convo_id, content) %>%
+              rename(issue_neg = content) %>%
+              mutate(issue_neg = as.numeric(issue_neg))) %>%
+  inner_join(df_conversations %>% 
+              select(convo_id, pid)) %>%
+  inner_join(df_qualtrics %>%
+              select(pid, ai_emo,ai_general, gender, secret_word)) %>% 
+  filter(secret_word == "treehouse") %>% 
+  left_join(
+    df_analysis_w %>% 
+      select(convo_id, starts_with("rate_val")) %>%
+      pivot_longer(cols = -convo_id, 
+                   names_to = "reap_value",
+                   names_pattern = "rate_val_(.*)",
+                   values_to = "person_value")
+  ) %>%
+  left_join(df_vals_person) %>%
+  mutate(reap_category_binary = if_else(reap_category == "top", 1, 0)) %>%
+  mutate_at(vars(ai_emo, ai_general, 
+                 person_value, mean_val,
+                 reap_pos, reap_neg,
+                 reap_care, reap_insight, reap_success,
+                 issue_pos, issue_neg), ~./100) %>% 
+  group_by(convo_id) %>% 
+  mutate(person_value_pc = scale(person_value, scale=F)) %>%
+  ungroup %>% 
+  mutate_at(vars(ai_emo, ai_general, 
+                 person_value, person_value_pc, mean_val,
+                 reap_pos, reap_neg,
+                 reap_care, reap_insight, reap_success,
+                 issue_pos, issue_neg), list(z = scale)) 
+
+effed_up_pids <- df_proc %>% 
+  filter(reap_category == "bottom") %>% 
+  filter(person_value == 1) %>% 
+  pull(pid)
+
+effed_up_pids_2 <- df_proc %>% 
+  filter(reap_category == "top") %>% 
+  filter(person_value < .10) %>%
+  pull(pid)
+
+df_proc <- df_proc %>%
+  filter(!pid %in% effed_up_pids) %>% 
+  filter(!pid %in% effed_up_pids_2) 
+
+df_proc$pid %>% unique %>% length
+```
+
+
+Define ZOIB
+===
+```{r}
+library(brms)
+zi_coi_zoib <- 
+  custom_family("zi_coi_zoib", 
+                dpars = c("mu", "zi", "coi", "phi"),
+                links = c("logit", "logit", "logit", "log"),
+                lb = c(0, 0, 0, 0),
+                ub = c(1, 1, 1, NA),
+                type = "real")
+stan_funs <- "
+  real zi_coi_zoib_lpdf(real y, real mu, real zi, real coi, real phi) { 
+    row_vector[2] shape = [mu * phi, (1 - mu) * phi];
+  
+    if (y == 0) { 
+      return log(zi); 
+    } else if (y == 1) {
+      return log1m(zi) + log(coi);
+    } else {
+      return beta_lpdf(y | shape[1], shape[2]) + log1m(zi) + log1m(coi);
+    }
+  }
+"
+stanvars <- stanvar(scode = stan_funs, block = "functions")
+
+
+posterior_predict_zi_coi_zoib <- function(i, prep, ...) {
+  mu <- brms::get_dpar(prep, "mu", i = i)
+  zi <- brms::get_dpar(prep, "zi", i = i)
+  coi <- brms::get_dpar(prep, "coi", i = i)
+  phi <- brms::get_dpar(prep, "phi", i = i)
+  
+  shape1 <- mu * phi
+  shape2 <- (1 - mu) * phi
+  
+  # Generate uniform random variables
+  u <- runif(prep$ndraws)
+  
+  # Compute cumulative probabilities
+  cdf_zero <- zi
+  cdf_one <- zi + (1 - zi) * coi
+  
+  # Initialize output vector
+  y <- numeric(prep$ndraws)
+  
+  # Assign outcomes based on cumulative probabilities
+  y[u < cdf_zero] <- 0
+  y[u >= cdf_zero & u < cdf_one] <- 1
+  
+  # For the remaining cases, draw from the beta distribution
+  beta_indices <- which(u >= cdf_one)
+  y[beta_indices] <- rbeta(length(beta_indices), shape1, shape2)
+  
+  return(y)
+}
+
+posterior_epred_zi_coi_zoib <- function(prep) {
+  # Extract distributional parameters from 'prep'
+  mu <- brms::get_dpar(prep, "mu")
+  zi <- brms::get_dpar(prep, "zi")    # Zero-inflation probability
+  coi <- brms::get_dpar(prep, "coi")  # Conditional one-inflation probability
+  
+  # Calculate the expected value E[Y]
+  EY <- (1 - zi) * (coi + (1 - coi) * mu)
+  
+  return(EY)
+}
+```
+
+
+
+```{r, echo=FALSE}
+# ------ End Preprocessing ------ #
+# ----- Run all chunks above -----#
+```
+
+
+
+```{r}
+d <- df_qualtrics %>% 
+  filter(pid %in% df_proc$pid)
+
+d %>% 
+  count(gender) %>% 
+  mutate(pr = (n*100)/nrow(d)) %>% 
+  as.data.frame
+
+d %>% 
+  summarize(
+    mean_age = mean(age),
+    sd_age = sd(age),
+    min_age = min(age),
+    max_age = max(age)
+  ) %>% 
+  as.data.frame
+
+
+d %>% 
+  select(matches("race_[0-9]+$")) %>% 
+  pivot_longer(everything()) %>% 
+  drop_na(value) %>% 
+  count(value) %>% 
+  mutate(pr = (n*100)/nrow(d)) %>% 
+  arrange(desc(n)) %>%
+  as.data.frame
+
+```
+Distributions
+===
+
+
+```{r}
+hist(df_proc$issue_neg)
+hist(df_proc$issue_pos)
+```
+
+```{r}
+hist(df_proc$ai_emo)
+hist(df_proc$ai_general)
+```
+
+mean values
+---
+```{r}
+df_vals %>% 
+  group_by(val_name) %>%
+  summarize(mean_val = mean(as.numeric(val_rating), na.rm = TRUE),
+            sd_val = sd(as.numeric(val_rating), na.rm = TRUE),
+            n = n(),
+            upper_ci = mean_val + 1.96 * sd_val / sqrt(n),
+            lower_ci = mean_val - 1.96 * sd_val / sqrt(n)) %>%
+  mutate(val_name = fct_reorder(val_name, mean_val)) %>%
+  ggplot(aes(x = val_name, y = mean_val)) + 
+  geom_col(fill = "steelblue") +  # Use geom_col() for bar chart
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +  # Add error bars
+  coord_flip() +
+  labs(y = "Mean Value Rating", x = "Value Name", title = "Mean Value Ratings with 95% CI") +
+  theme_minimal()
+ggsave("analysis/plots/mean_val_ratings.png", width = 8, height = 6)
+  
+```
+
+
+Values in top category
+---
+```{r}
+df_proc %>% 
+  filter(reap_category == "top") %>%
+  group_by(reap_value) %>% 
+  summarise(n = n()) %>%
+  ungroup %>% 
+  mutate(reap_value = fct_reorder(reap_value, n, .desc=T)) %>%
+  ggplot(aes(x = reap_value, y = n)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+df_proc %>% 
+  filter(reap_category == "top") %>% 
+  ggplot(aes(x = person_value)) + 
+  geom_histogram()
+
+df_proc %>% 
+  filter(reap_category == "top") %>% 
+  pull(person_value) %>% 
+  psych::describe() %>% 
+  as.data.frame
+sum((df_proc %>% 
+  filter(reap_category == "top") %>% 
+  pull(person_value)) == 1)
+mean((df_proc %>% 
+  filter(reap_category == "top") %>% 
+  pull(person_value)) == 1)
+```
+
+Values in bottom category
+----
+```{r}
+df_proc %>% 
+  filter(reap_category == "bottom") %>%
+  group_by(reap_value) %>% 
+  summarise(n = n()) %>%
+  ungroup %>% 
+  mutate(reap_value = fct_reorder(reap_value, n, .desc=T)) %>%
+  ggplot(aes(x = reap_value, y = n)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+df_proc %>% 
+  filter(reap_category == "bottom") %>% 
+  ggplot(aes(x = person_value)) + 
+  geom_histogram()
+
+df_proc %>% 
+  filter(reap_category == "bottom") %>% 
+  pull(person_value) %>% 
+  psych::describe() %>% 
+  as.data.frame
+
+sum((df_proc %>% 
+  filter(reap_category == "bottom") %>% 
+  pull(person_value)) == 0)
+mean((df_proc %>% 
+  filter(reap_category == "bottom") %>% 
+  pull(person_value)) == 0)
+
+# df_analysis %>% 
+#   filter(convo_id == 213) %>% 
+#   filter(str_detect(field, "rate_val")) %>% 
+#   view
+
+```
+
+Neg emo
+---
+### Pre
+```{r}
+d <- df_proc %>% 
+  select(convo_id, issue_pos, issue_neg) %>% 
+  filter(!duplicated(.))
+hist(d$issue_neg)
+(d$issue_neg*100) %>% 
+  psych::describe() %>% 
+  as.data.frame
+sum(d$issue_neg == 1)
+mean(d$issue_neg == 1)
+```
+
+Pos emo
+---
+### Pre
+```{r}
+d <- df_proc %>% 
+  select(convo_id, issue_pos, issue_neg) %>% 
+  filter(!duplicated(.))
+hist(d$issue_pos)
+(d$issue_pos*100) %>% 
+  psych::describe() %>% 
+  as.data.frame
+sum(d$issue_pos == 1)
+mean(d$issue_pos == 1)
+sum(d$issue_pos == 0)
+mean(d$issue_pos == 0)
+```
+
+### Post
+```{r}
+df_proc %>% 
+  group_by(reap_category) %>% 
+  summarize(mean_pos = mean(reap_pos), 
+            mean_neg = mean(reap_neg),
+            oi_neg = sum(reap_neg == 1),
+            oi_neg_mean = mean(reap_neg == 1),
+            zi_pos = sum(reap_pos == 0),
+            zi_pos_mean = mean(reap_pos == 0),
+            mean_pos_increase = mean(reap_pos - issue_pos),
+            mean_neg_decrease = mean(issue_neg - reap_neg),
+            sd_pos_increase = sd(reap_pos - issue_pos),
+            sd_neg_decrease = sd(issue_neg - reap_neg)) %>% 
+  as.data.frame
+            
+```
+
+
+
+
+
+Pos emo
+===
+
+```{r}
+hist(df_proc$reap_pos)
+```
+
+```{r}
+df_proc %>% 
+  ggplot(aes(x = reap_category, y = reap_pos)) +
+  stat_summary()
+
+fit <- df_proc %>% 
+  lmer(reap_pos_z ~ reap_category +
+         (reap_category|convo_id) +
+         (reap_category|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+linear bayesian
+---
+```{r}
+f <- bf(reap_pos ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value))
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_pos.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .95)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .8)
+
+
+
+epreds <- df_proc %>% 
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA) 
+epreds %>% 
+  group_by(reap_category) %>%
+  summarize(
+    mean = mean(.epred)
+  ) %>% 
+  as.data.frame
+# epreds %>%
+#   ggplot(aes(x = reap_category, y = .epred)) +
+#   stat_halfeye(position = position_dodge(0), scale=.2) + 
+#   # stat_summary(aes(group = 1), geom="line") + 
+#   scale_fill_brewer() +
+#   theme_bw()
+
+epreds %>%
+  ggplot(aes(x = reap_category, y = reap_pos)) +
+  geom_point(data = df_proc, size = 1, alpha = .15, position = position_jitter(.1)) +
+  # geom_point(data = df_proc, size = 2, alpha = .3) +
+  # geom_violin(data = df_proc, size = 2, alpha = .3) +
+  stat_halfeye(aes(y = .epred), .width = c(.95, .90, .80, .5), scale=.3) +
+  scale_fill_brewer() +
+  theme_bw() +
+  scale_y_continuous(labels = function(x) x * 100, limits = c(0,1)) +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.text = element_text(size=13),
+        ) 
+ggsave("analysis/plots/diss_congruence_pos.png", width = 6, height = 6)
+```
+
+z scored
+```{r}
+f <- bf(reap_pos_z ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value))
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_pos_z.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+
+
+
+epreds <- d %>% 
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA) 
+epreds %>% 
+  group_by(reap_category) %>%
+  summarize(
+    mean = mean(.epred)
+  ) %>% 
+  as.data.frame
+epreds %>%
+  ggplot(aes(x = reap_category, y = .epred)) +
+  stat_halfeye(position = position_dodge(0), scale=.2) + 
+  # stat_summary(aes(group = 1), geom="line") + 
+  scale_fill_brewer() +
+  theme_bw()
+ggsave("plots/asem_congruence_pos.png", width = 8, height = 6)
+```
+
+```{r}
+f <- bf(reap_pos ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value),
+         sigma ~ reap_category)
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_pos_sigma.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+```
+
+```{r}
+fit <- lmer(reap_pos_z ~ reap_category + (reap_category|convo_id) + (reap_category|reap_value), data = df_proc)
+tab_model(fit)
+fit <- lmer(reap_neg_z ~ reap_category + (reap_category|convo_id) + (reap_category|reap_value), data = df_proc)
+tab_model(fit)
+fit <- lmer(reap_care_z ~ reap_category + (reap_category|convo_id) + (reap_category|reap_value), data = df_proc)
+tab_model(fit)
+fit <- lmer(reap_success_z ~ reap_category + (reap_category|convo_id) + (reap_category|reap_value), data = df_proc)
+tab_model(fit)
+```
+
+
+
+Value endorsement
+---
+
+PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_pos_z ~ person_value_pc_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+Non-PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_pos_z ~ person_value_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+zoib
+---
+```{r}
+f <- bf(reap_pos ~ reap_category + (1|convo_id) + (1|reap_value),
+        zi ~ reap_category + (1|convo_id) + (1|reap_value),
+        coi ~ reap_category + (1|convo_id) + (1|reap_value),
+        phi ~ reap_category + (1|convo_id) + (1|reap_value))
+fit <- brm(f,
+           data = df_proc,
+           family = zi_coi_zoib,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           stanvars = stanvars,
+           # control = list(adapt_delta = .85),
+           file = here("analysis/models/pos_zoib.rds"),
+           file_refit = "on_change")
+           # file_refit = "always")
+
+summary(fit)
+pp_check(fit)
+```
+
+
+AI emo interaction
+---
+```{r}
+
+fit <- df_proc %>% 
+  lmer(reap_pos_z ~ reap_category*ai_emo_z + (reap_category+ai_emo_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+AI attitudes interaction
+---
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_pos_z ~ reap_category*ai_general_z + 
+         (reap_category+ai_general_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+Gender interaction
+---
+```{r}
+fit <- df_proc %>% 
+  filter(gender != "Other") %>% 
+  lmer(reap_pos_z ~ reap_category*gender + 
+         (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type="int")
+```
+
+
+Neg emo
+===
+
+```{r}
+hist(df_proc$reap_neg)
+```
+
+```{r}
+df_proc %>% 
+  ggplot(aes(x = reap_category, y = reap_neg)) +
+  stat_summary()
+
+fit <- df_proc %>% 
+  lmer(reap_neg_z ~ reap_category + (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+linear bayesian
+---
+```{r}
+f <- bf(reap_neg ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value))
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_neg.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+
+
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .95)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .8)
+
+
+epreds <- df_proc %>% 
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA) 
+epreds %>% 
+  group_by(reap_category) %>%
+  summarize(
+    mean = mean(.epred)
+  ) %>% 
+  as.data.frame
+# epreds %>%
+#   ggplot(aes(x = reap_category, y = .epred)) +
+#   stat_halfeye(position = position_dodge(0), scale=.2) + 
+#   # stat_summary(aes(group = 1), geom="line") + 
+#   scale_fill_brewer() +
+#   theme_bw()
+epreds %>%
+  ggplot(aes(x = reap_category, y = reap_neg)) +
+  geom_point(data = df_proc, size = 1, alpha = .15, position = position_jitter(.1)) +
+  # geom_point(data = df_proc, size = 2, alpha = .3) +
+  # geom_violin(data = df_proc, size = 2, alpha = .3) +
+  stat_halfeye(aes(y = .epred), .width = c(.95, .90, .80, .5), scale=.3) +
+  scale_fill_brewer() +
+  theme_bw() +
+  scale_y_continuous(labels = function(x) x * 100, limits = c(0,1)) +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.text = element_text(size=13),
+        ) 
+ggsave("analysis/plots/diss_congruence_neg.png", width = 6, height = 6)
+```
+
+z scored
+```{r}
+f <- bf(reap_neg_z ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value))
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_neg_z.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+
+
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+
+
+epreds <- d %>% 
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA) 
+epreds %>% 
+  group_by(reap_category) %>%
+  summarize(
+    mean = mean(.epred)
+  ) %>% 
+  as.data.frame
+epreds %>%
+  ggplot(aes(x = reap_category, y = .epred)) +
+  stat_halfeye(position = position_dodge(0), scale=.2) + 
+  # stat_summary(aes(group = 1), geom="line") + 
+  scale_fill_brewer() +
+  theme_bw()
+ggsave("plots/asem_congruence_neg.png", width = 8, height = 6)
+```
+
+```{r}
+f <- bf(reap_neg ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value),
+         sigma ~ reap_category)
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_neg_sigma.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+```
+
+Value endorsement
+---
+
+### PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_neg_z ~ person_value_pc_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+### Non-PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_neg_z ~ person_value_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+###
+
+```{r}
+fit <- df_proc %>% 
+  group_by(convo_id) %>%
+  summarize(reap_neg = mean(reap_neg)) %>%
+  ungroup %>%
+  left_join(df_vals_person) %>%
+  mutate_at(vars(reap_neg, mean_val), list(z = scale)) %>% 
+  lm(reap_neg_z ~ mean_val_z, data = .)
+summary(fit)
+```
+
+
+zoib
+---
+```{r}
+f <- bf(reap_neg ~ reap_category + (1|convo_id) + (1|reap_value),
+        zi ~ reap_category + (1|convo_id) + (1|reap_value),
+        coi ~ reap_category + (1|convo_id) + (1|reap_value),
+        phi ~ reap_category + (1|convo_id) + (1|reap_value))
+fit <- brm(f,
+           data = df_proc,
+           family = zi_coi_zoib,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           stanvars = stanvars,
+           # control = list(adapt_delta = .85),
+           file = here("analysis/models/neg_zoib.rds"),
+           file_refit = "on_change")
+           # file_refit = "always")
+summary(fit)
+pp_check(fit)
+```
+
+AI emo interaction
+---
+```{r}
+
+fit <- df_proc %>% 
+  lmer(reap_neg_z ~ reap_category*ai_emo_z + (reap_category+ai_emo_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+AI attitudes interaction
+---
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_neg_z ~ reap_category*ai_general_z + 
+         (reap_category+ai_general_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+Gender interaction
+---
+```{r}
+fit <- df_proc %>% 
+  filter(gender != "Other") %>% 
+  lmer(reap_neg_z ~ reap_category*gender + 
+         (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type="int")
+```
+
+Success
+===
+
+```{r}
+hist(df_proc$reap_success)
+
+df_proc %>% 
+  ggplot(aes(x = reap_category, y = reap_success)) +
+  stat_summary()
+
+```
+
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_success_z ~ reap_category + (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+linear bayesian
+---
+```{r}
+f <- bf(reap_success ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value))
+
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_success.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+pp_check(fit)
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .95)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .8)
+
+
+                
+epreds <- df_proc %>% 
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA) 
+epreds %>% 
+  group_by(reap_category) %>%
+  summarize(
+    mean = mean(.epred)
+  ) %>% 
+  as.data.frame
+# epreds %>%
+#   ggplot(aes(x = reap_category, y = .epred)) +
+#   stat_halfeye(position = position_dodge(0), scale=.2) + 
+#   # stat_summary(aes(group = 1), geom="line") + 
+#   scale_fill_brewer() +
+#   theme_bw()
+
+epreds %>%
+  ggplot(aes(x = reap_category, y = reap_success)) +
+  geom_point(data = df_proc, size = 1, alpha = .15, position = position_jitter(.1)) +
+  # geom_point(data = df_proc, size = 2, alpha = .3) +
+  # geom_violin(data = df_proc, size = 2, alpha = .3) +
+  stat_halfeye(aes(y = .epred), .width = c(.95, .90, .80, .5), scale=.3) +
+  scale_fill_brewer() +
+  theme_bw() +
+  scale_y_continuous(labels = function(x) x * 100, limits = c(0,1)) +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.text = element_text(size=13),
+        ) 
+ggsave("analysis/plots/diss_congruence_success.png", width = 6, height = 6)
+```
+
+### Care to success
+```{r}
+f <- bf(reap_success ~ reap_care +
+         (1|convo_id) +
+         (1|reap_value))
+
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_care_success.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+pp_check(fit)
+
+mean(as_draws_df(fit)$b_reap_care)
+hdi(as_draws_df(fit)$b_reap_care, credMass = .9)
+
+
+#                 
+# epreds <- d %>% 
+#   data_grid(reap_category = c("top", "bottom")) %>%
+#   add_epred_draws(fit, re_formula = NA) 
+# epreds %>% 
+#   group_by(reap_category) %>%
+#   summarize(
+#     mean = mean(.epred)
+#   ) %>% 
+#   as.data.frame
+# epreds %>%
+#   ggplot(aes(x = reap_category, y = .epred)) +
+#   stat_halfeye(position = position_dodge(0), scale=.2) + 
+#   # stat_summary(aes(group = 1), geom="line") + 
+#   scale_fill_brewer() +
+#   theme_bw()
+# ggsave("plots/asem_congruence_success.png", width = 8, height = 6)
+```
+
+z scored
+```{r}
+f <- bf(reap_success_z ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value))
+
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_success_z.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+pp_check(fit)
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+
+
+                
+epreds <- d %>% 
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA) 
+epreds %>% 
+  group_by(reap_category) %>%
+  summarize(
+    mean = mean(.epred)
+  ) %>% 
+  as.data.frame
+epreds %>%
+  ggplot(aes(x = reap_category, y = .epred)) +
+  stat_halfeye(position = position_dodge(0), scale=.2) + 
+  # stat_summary(aes(group = 1), geom="line") + 
+  scale_fill_brewer() +
+  theme_bw()
+ggsave("plots/asem_congruence_success.png", width = 8, height = 6)
+```
+
+
+```{r}
+f <- bf(reap_success ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value),
+         sigma ~ reap_category)
+
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_success_sigma.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+pp_check(fit)
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+
+mean(as_draws_df(fit)$b_sigma_reap_categorytop)
+hdi(as_draws_df(fit)$b_sigma_reap_categorytop, credMass = .9)
+```
+
+
+
+Value endorsement
+---
+
+### PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_success_z ~ person_value_pc_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+### Non-PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_success_z ~ person_value_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+
+zoib
+---
+```{r}
+f <- bf(reap_success ~ reap_category + (1|convo_id) + (1|reap_value),
+        zi ~ reap_category + (1|convo_id) + (1|reap_value),
+        coi ~ reap_category + (1|convo_id) + (1|reap_value),
+        phi ~ reap_category + (1|convo_id) + (1|reap_value))
+fit <- brm(f,
+           data = df_proc,
+           family = zi_coi_zoib,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           stanvars = stanvars,
+           # control = list(adapt_delta = .85),
+           file = here("analysis/models/success_zoib.rds"),
+           file_refit = "on_change")
+           # file_refit = "always")
+summary(fit)
+pp_check(fit)
+```
+
+AI emo interaction
+---
+```{r}
+
+fit <- df_proc %>% 
+  lmer(reap_success_z ~ reap_category*ai_emo_z + (reap_category+ai_emo_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+AI attitudes interaction
+---
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_success_z ~ reap_category*ai_general_z + 
+         (reap_category+ai_general_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+Gender interaction
+---
+```{r}
+fit <- df_proc %>% 
+  filter(gender != "Other") %>% 
+  lmer(reap_success_z ~ reap_category*gender + 
+         (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type="int")
+```
+
+
+Care
+===
+```{r}
+hist(df_proc$reap_care)
+df_proc %>% 
+  ggplot(aes(x = reap_category, y = reap_care)) +
+  stat_summary()
+
+```
+
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_care_z ~ reap_category + (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+
+linear bayesian
+---
+```{r}
+
+f <- bf(reap_care ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value))
+
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_care.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+pp_check(fit)
+mean(as_draws_df(fit)$b_reap_categorytop)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .95)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .8)
+
+hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+conditional_effects(fit)
+```
+
+```{r}
+
+f <- bf(reap_care ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value),
+         sigma ~ reap_category
+        )
+
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_care_sigma.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+pp_check(fit)
+
+epreds <- df_proc %>%
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA)
+epreds %>%
+  ggplot(aes(x = reap_category, y = reap_care)) +
+  geom_point(data = df_proc, size = 1, alpha = .15, position = position_jitter(.1)) +
+  # geom_point(data = df_proc, size = 2, alpha = .3) +
+  # geom_violin(data = df_proc, size = 2, alpha = .3) +
+  stat_halfeye(aes(y = .epred), .width = c(.95, .90, .80, .5), scale=.3) +
+  scale_fill_brewer() +
+  theme_bw() +
+  scale_y_continuous(labels = function(x) x * 100, limits = c(0,1)) +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.text = element_text(size=13),
+        ) 
+
+
+ggsave(here("analysis/plots/diss_lin_care_sigma.png"), width = 6, height = 6)
+
+preds <- df_proc %>%
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_predicted_draws(fit, re_formula = NA)
+preds %>%
+  ggplot(aes(x = reap_category, y = reap_care)) +
+  # geom_point(data = df_proc, size = 2, alpha = .3) +
+  stat_halfeye(aes(y = .prediction), .width = c(.95, .90, .80, .5), scale=.3) +
+  scale_fill_brewer() +
+  labs(x = "Reappraisal category",
+       y = "Goal-relevance (0-1)")
+  # scale_y_continuous(limits = c(0, 1)) + 
+  theme_bw() 
+
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+
+
+mean(as_draws_df(fit)$b_sigma_reap_categorytop)
+HDInterval::hdi(as_draws_df(fit)$b_sigma_reap_categorytop, credMass = .9)
+```
+
+z scored
+```{r}
+
+f <- bf(reap_care_z ~ reap_category +
+         (1|convo_id) +
+         (1|reap_value),
+         sigma ~ reap_category
+        )
+
+fit <- brm(f, 
+           data = df_proc,
+           family = gaussian,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           file = here("analysis/models/lin_care_sigma_z.rds"),
+           file_refit = "on_change")
+           # file_refit = "always"
+
+summary(fit)
+pp_check(fit)
+
+epreds <- df_proc %>%
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_epred_draws(fit, re_formula = NA)
+epreds %>%
+  ggplot(aes(x = reap_category, y = reap_care)) +
+  # geom_point(data = df_proc, size = 2, alpha = .3) +
+  stat_halfeye(aes(y = .epred), .width = c(.95, .90, .80, .5), scale=.3) +
+  scale_fill_brewer() +
+  labs(x = "Reappraisal category",
+       y = "Goal-relevance (0-1)")
+  # scale_y_continuous(limits = c(0, 1)) + 
+  theme_bw() 
+
+preds <- df_proc %>%
+  data_grid(reap_category = c("top", "bottom")) %>%
+  add_predicted_draws(fit, re_formula = NA)
+preds %>%
+  ggplot(aes(x = reap_category, y = reap_care)) +
+  # geom_point(data = df_proc, size = 2, alpha = .3) +
+  stat_halfeye(aes(y = .prediction), .width = c(.95, .90, .80, .5), scale=.3) +
+  scale_fill_brewer() +
+  labs(x = "Reappraisal category",
+       y = "Goal-relevance (0-1)")
+  # scale_y_continuous(limits = c(0, 1)) + 
+  theme_bw() 
+
+ggsave(here("analysis/plots/lin_care_sigma.png"), width = 8, height = 6)
+
+mean(as_draws_df(fit)$b_reap_categorytop)
+HDInterval::hdi(as_draws_df(fit)$b_reap_categorytop, credMass = .9)
+
+
+mean(as_draws_df(fit)$b_sigma_reap_categorytop)
+HDInterval::hdi(as_draws_df(fit)$b_sigma_reap_categorytop, credMass = .9)
+```
+
+
+Value endorsement
+---
+
+### PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_care_z ~ person_value_pc_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+### Non-PC
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_care_z ~ person_value_z +
+         (person_value|convo_id) +
+         (person_value|reap_value), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+zoib
+---
+```{r}
+f <- bf(reap_care ~ reap_category + (1|convo_id) + (1|reap_value),
+        zi ~ reap_category + (1|convo_id) + (1|reap_value),
+        coi ~ reap_category + (1|convo_id) + (1|reap_value),
+        phi ~ reap_category + (1|convo_id) + (1|reap_value))
+fit <- brm(f,
+           data = df_proc,
+           family = zi_coi_zoib,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           stanvars = stanvars,
+           # control = list(adapt_delta = .85),
+           file = here("analysis/models/care_zoib.rds")) #,
+           # file_refit = "on_change")
+           # file_refit = "always")
+summary(fit)
+pp_check(fit)
+conditional_effects(fit)
+
+h <- hypothesis(fit, "reap_categorytop > 0")
+h
+```
+
+
+AI emo interaction
+---
+```{r}
+
+fit <- df_proc %>% 
+  lmer(reap_care_z ~ reap_category*ai_emo_z + (reap_category+ai_emo_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+### zoib
+```{r}
+
+f <- bf(reap_care ~ reap_category*ai_emo_z + (1|convo_id) + (1|reap_value),
+        zi ~ reap_category + (1|convo_id) + (1|reap_value),
+        coi ~ reap_category + (1|convo_id) + (1|reap_value),
+        phi ~ reap_category + (1|convo_id) + (1|reap_value))
+fit <- brm(f,
+           data = df_proc,
+           family = zi_coi_zoib,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           stanvars = stanvars,
+           # control = list(adapt_delta = .85),
+           file = here("analysis/models/care_x__zoib.rds"),
+           file_refit = "on_change")
+           # file_refit = "always")
+summary(fit)
+pp_check(fit)
+
+conditional_effects(fit)
+```
+
+
+
+
+AI attitudes interaction
+---
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_care_z ~ reap_category*ai_general_z + 
+         (reap_category+ai_general_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+Gender interaction
+---
+```{r}
+fit <- df_proc %>% 
+  filter(gender != "Other") %>% 
+  lmer(reap_care_z ~ reap_category*gender + 
+         (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type="int")
+```
+
+
+Insight
+===
+```{r}
+hist(df_proc$reap_insight)
+```
+
+
+```{r}
+df_proc %>% 
+  ggplot(aes(x = reap_category, y = reap_insight)) +
+  stat_summary()
+
+fit <- df_proc %>% 
+  lmer(reap_insight_z ~ reap_category + (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "slope")
+```
+
+
+
+zoib
+---
+```{r}
+f <- bf(reap_insight ~ reap_category + (1|convo_id) + (1|reap_value),
+        zi ~ reap_category + (1|convo_id) + (1|reap_value),
+        coi ~ reap_category + (1|convo_id) + (1|reap_value),
+        phi ~ reap_category + (1|convo_id) + (1|reap_value))
+fit <- brm(f,
+           data = df_proc,
+           family = zi_coi_zoib,
+           chains = 4,
+           cores = 4,
+           iter = 5000,
+           warmup = 1000,
+           stanvars = stanvars,
+           # control = list(adapt_delta = .85),
+           file = here("analysis/models/insight_zoib.rds"),
+           file_refit = "on_change")
+           # file_refit = "always")
+summary(fit)
+pp_check(fit)
+```
+
+AI emo interaction
+---
+```{r}
+
+fit <- df_proc %>% 
+  lmer(reap_insight_z ~ reap_category*ai_emo_z + (reap_category+ai_emo_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+AI attitudes interaction
+---
+```{r}
+fit <- df_proc %>% 
+  lmer(reap_insight_z ~ reap_category*ai_general_z + 
+         (reap_category+ai_general_z|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type = "int")
+```
+
+
+Gender interaction
+---
+```{r}
+fit <- df_proc %>% 
+  filter(gender != "Other") %>% 
+  lmer(reap_insight_z ~ reap_category*gender + 
+         (reap_category|convo_id), data = .)
+tab_model(fit)
+plot_model(fit, type="int")
+```
+
+Rank
+===
+```{r}
+f <- bf(reap_rank ~ reap_category_binary + (1|convo_id) + (1|reap_value))
+fit <- brm(
+  formula=f,
+  data = df_proc,
+  family = cumulative(probit),
+  cores = 4, 
+  chains = 4,
+  file = here("analysis/models/rank_probit.rds"),
+  file_refit = "on_change",
+  warmup = 1000,
+  iter = 5000
+)
+pp_check(fit)
+summary(fit)
+
+# plot(fit_rank_probit)
+conditional_effects(fit, effects = "reap_category_binary", categorical = TRUE)
+```
+
+
+
+Session Info
+===
+```{r}
+sessionInfo()
+```
+
+
+
+
