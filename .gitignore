@@ -60,3 +60,37 @@ gpt_query.txt
 playground.ipynb
 
 notes.md
+.Rproj.user
+
+# Private backups, runtime secrets, study data, and model artifacts.
+db_backup/
+**/.env*
+nginx/certs/
+certbot/
+outputs/
+.RData
+.Rhistory
+*.rds
+*.RDS
+*.rda
+*.Rda
+*.RData
+*.Rproj
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.sql
+*.dump
+*.zip
+analysis/data/
+analysis/models/
+analysis/plots/
+plots/
